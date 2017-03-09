@@ -1,13 +1,16 @@
 <?xml version="1.0"?>
 <package>
   <name>kinect2</name>
-  <version>0.0.0</version>
-  <description>The kinect2 package</description>
+  <version>0.0.1</version>
+  <description>
+    The kinect2 package contains a simpliefied version of the kinect driver for ros.
+    It requires fewer computation power and only provides all data in raw resolutions.
+  </description>
 
-  <maintainer email="hanten@todo.todo">hanten</maintainer>
+  <maintainer email="richard.hanten@uni-tuebingen.de">hanten</maintainer>
+  <author email="richard.hanten@uni-tuebingen.de">hanten</author>
 
-
-  <license>TODO</license>
+  <license>BSD</license>
 
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>roscpp</build_depend>
