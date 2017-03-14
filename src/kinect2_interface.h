@@ -22,7 +22,6 @@
 
 namespace libfreenect2 {
     using Freenect2DevicePtr = std::shared_ptr<Freenect2Device>;
-    using PacketPipelinePtr  = std::shared_ptr<PacketPipeline>;
     using SyncMultiFrameListenerPtr = std::shared_ptr<SyncMultiFrameListener>;
     using FramePtr = std::shared_ptr<libfreenect2::Frame>;
     using RegistrationPtr = std::shared_ptr<libfreenect2::Registration>;
@@ -113,8 +112,8 @@ private:
 
     libfreenect2::Freenect2                 context_;
     libfreenect2::Freenect2DevicePtr        device_;
-    libfreenect2::PacketPipelinePtr         pipeline_;
-    libfreenect2::SyncMultiFrameListenerPtr listener_;
+    libfreenect2::PacketPipeline           *pipeline_;
+    libfreenect2::SyncMultiFrameListener   *listener_;
     libfreenect2::FrameMap                  frames_;
 
     std::string                             serial_;
@@ -133,6 +132,7 @@ private:
 
     void loop();
     void setupData();
+    bool doSetup();
 };
 
 #endif // KINECT2_INTERFACE_H

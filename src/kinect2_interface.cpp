@@ -24,61 +24,6 @@ bool Kinect2Interface::setup(const Parameters &parameters)
 
     parameters_ = parameters;
 
-    switch(parameters_.mode) {
-    case CPU:
-        pipeline_.reset(new libfreenect2::CpuPacketPipeline());
-        break;
-    case GL:
-#ifdef LIBFREENECT2_WITH_OPENGL_SUPPORT
-        pipeline_.reset(new libfreenect2::OpenGLPacketPipeline());
-#else
-        std::cerr << "[Kinect2Interface]: GL is not supported!" << std::endl;
-        return false;
-#endif
-        break;
-    case OCL:
-#ifdef LIBFREENECT2_WITH_OPENCL_SUPPORT
-        pipeline_.reset(new libfreenect2::OpenCLPacketPipeline(-1));
-#else
-        std::cerr << "[Kinect2Interface]: OCL is not supported!" << std::endl;
-        return false;
-#endif
-        break;
-    case CUDA:
-#ifdef LIBFREENECT2_WITH_CUDA_SUPPORT
-        pipeline_.reset(new libfreenect2::CudaPacketPipeline());
-#else
-        std::cerr << "[Kinect2Interface]: CUDA is not supported!" << std::endl;
-        return false;
-#endif
-        break;
-    default:
-        std::cerr << "[Kinect2Interface]: Unknown processing mode, using 'CPU'!" << std::endl;
-        pipeline_.reset(new libfreenect2::CpuPacketPipeline());
-        break;
-    }
-
-    serial_ = context_.getDefaultDeviceSerialNumber();
-    device_.reset(context_.openDevice(serial_, pipeline_.get()));
-
-    if(!device_) {
-        std::cerr << "[Kinect2Interface]: Cannot open device!" << std::endl;
-        return false;
-    }
-
-    /// setup the listeners
-    listener_.reset(new libfreenect2::SyncMultiFrameListener(libfreenect2::Frame::Ir |
-                                                             libfreenect2::Frame::Depth |
-                                                             libfreenect2::Frame::Color));
-    device_->setColorFrameListener(listener_.get());
-    device_->setIrAndDepthFrameListener(listener_.get());
-
-    frame_depth_undistorted_.reset(new libfreenect2::Frame (camera_parameters_.width_ir,
-                                                            camera_parameters_.height_ir,
-                                                            camera_parameters_.bpp));
-    frame_rgb_registered_.reset(new libfreenect2::Frame (camera_parameters_.width_ir,
-                                                         camera_parameters_.height_ir,
-                                                         camera_parameters_.bpp));
     return true;
 }
 
@@ -86,8 +31,14 @@ bool Kinect2Interface::start()
 {
     if(is_running_)
         return false;
+
+    if(!doSetup())
+        return false;
+
+    shutdown_ = false;
     thread_ = std::thread([this](){loop();});
     thread_.detach();
+    return true;
 }
 
 bool Kinect2Interface::stop()
@@ -102,10 +53,13 @@ bool Kinect2Interface::stop()
 
 Kinect2Interface::Data::Ptr Kinect2Interface::getData()
 {
+
     std::unique_lock<std::mutex> l(data_mutex_);
-    data_available_.wait(l);
     if(!is_running_)
         return Data::Ptr();
+    else
+        data_available_.wait(l);
+
     return data_;
 }
 
@@ -134,7 +88,7 @@ void Kinect2Interface::loop()
 
     is_running_ = true;
     while(!shutdown_) {
-        if(!listener_->waitForNewFrame(frames_, 10*1000)) {
+        if(!listener_->waitForNewFrame(frames_, 1000)) {
             std::cerr << "[Kinect2Interface]: Listener Timeout!" << std::endl;
             shutdown_ = true;
         } else {
@@ -187,6 +141,7 @@ void Kinect2Interface::loop()
     device_->close();
     is_running_ = false;
     data_available_.notify_one(); /// drop waiting thread
+    device_.reset();
 }
 
 void Kinect2Interface::setupData()
@@ -221,4 +176,68 @@ void Kinect2Interface::setupData()
     data_->points->points.resize(camera_parameters_.height_ir *
                                 camera_parameters_.width_ir);
 
+}
+
+bool Kinect2Interface::doSetup()
+{
+    switch(parameters_.mode) {
+    case CPU:
+        pipeline_ = (new libfreenect2::CpuPacketPipeline());
+        break;
+    case GL:
+#ifdef LIBFREENECT2_WITH_OPENGL_SUPPORT
+        pipeline_ = (new libfreenect2::OpenGLPacketPipeline());
+#else
+        std::cerr << "[Kinect2Interface]: GL is not supported!" << std::endl;
+        return false;
+#endif
+        break;
+    case OCL:
+#ifdef LIBFREENECT2_WITH_OPENCL_SUPPORT
+        pipeline_ = (new libfreenect2::OpenCLPacketPipeline(-1));
+#else
+        std::cerr << "[Kinect2Interface]: OCL is not supported!" << std::endl;
+        return false;
+#endif
+        break;
+    case CUDA:
+#ifdef LIBFREENECT2_WITH_CUDA_SUPPORT
+        pipeline_ = (new libfreenect2::CudaPacketPipeline());
+#else
+        std::cerr << "[Kinect2Interface]: CUDA is not supported!" << std::endl;
+        return false;
+#endif
+        break;
+    default:
+        std::cerr << "[Kinect2Interface]: Unknown processing mode, using 'CPU'!" << std::endl;
+        pipeline_ = (new libfreenect2::CpuPacketPipeline());
+        break;
+    }
+
+    serial_ = context_.getDefaultDeviceSerialNumber();
+
+    /// setup the listeners
+    listener_ = (new libfreenect2::SyncMultiFrameListener(libfreenect2::Frame::Ir |
+                                                          libfreenect2::Frame::Depth |
+                                                          libfreenect2::Frame::Color));
+
+    frame_depth_undistorted_.reset(new libfreenect2::Frame (camera_parameters_.width_ir,
+                                                            camera_parameters_.height_ir,
+                                                            camera_parameters_.bpp));
+    frame_rgb_registered_.reset(new libfreenect2::Frame (camera_parameters_.width_ir,
+                                                         camera_parameters_.height_ir,
+                                                         camera_parameters_.bpp));
+
+
+    device_.reset(context_.openDevice(serial_, pipeline_));
+
+    if(!device_) {
+        std::cerr << "[Kinect2Interface]: Cannot open device!" << std::endl;
+        return false;
+    }
+
+    device_->setColorFrameListener(listener_);
+    device_->setIrAndDepthFrameListener(listener_);
+
+    return true;
 }

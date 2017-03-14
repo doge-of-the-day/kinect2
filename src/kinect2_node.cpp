@@ -272,6 +272,8 @@ void Kinect2Node::publish()
             data->points->header.frame_id = frame_id_ir_;
             pub_pointcloud_.publish(data->points);
         }
+    } else {
+        ros::Rate(1).sleep();
     }
 }
 
