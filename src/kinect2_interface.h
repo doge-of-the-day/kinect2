@@ -70,13 +70,13 @@ public:
             return *this;
          }
 
-         const std::size_t bpp               = 4;
+         const std::size_t bpp              = 4;
          const std::size_t width_rgb        = 1080;
          const std::size_t height_rgb       = 1920;
          const std::size_t size_rgb         = bpp * height_rgb * width_rgb;
-         const std::size_t depth_width      = 512;
-         const std::size_t depth_height     = 424;
-         const std::size_t depth_size       = depth_height * depth_width * bpp;
+         const std::size_t width_ir         = 512;
+         const std::size_t height_ir        = 424;
+         const std::size_t size_ir          = height_ir * width_ir * bpp;
     };
 
     struct Parameters {

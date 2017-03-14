@@ -25,7 +25,7 @@ bool Kinect2Node::setup()
     const std::string topic_pointcloud        = nh_private_.param<std::string>("topic_rgb",                 "/kinect2/points");
     pub_rate_preferred_                       = nh_private_.param<double>("preferred_publication_rate",     -1.0);
     frame_id_rgb_                             = nh_private_.param<std::string>("frame_id_rgb",              "kinect2_rgb_optical_frame");
-    frame_id_depth_                           = nh_private_.param<std::string>("frame_id_depth",            "kinect2_depth_optical_frame");
+    frame_id_ir_                              = nh_private_.param<std::string>("frame_id_ir",               "kinect2_depth_optical_frame");
     frame_id_                                 = nh_private_.param<std::string>("frame_id",                  "kinect2_frame");
 
     kinterface_parameters_.get_rgb                  = nh_private_.param<bool>("publish_rgb", false);
@@ -163,7 +163,7 @@ void Kinect2Node::publish()
         camera_info_rgb_->distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
         // camera_info_rgb_->D;    /// there are no parameters in the driver
 
-        libfreenect2::Freenect2Device::ColorCameraParams &c = kinterface_camera_paramters_.color;
+        libfreenect2::Freenect2Device::ColorCameraParams &c = kinterface_camera_paramters_->color;
         camera_info_rgb_->K[0]  = c.fx;
         camera_info_rgb_->K[2]  = c.cx;
         camera_info_rgb_->K[4]  = c.fy;
@@ -179,8 +179,6 @@ void Kinect2Node::publish()
         camera_info_rgb_->P[5]  = c.fy;
         camera_info_rgb_->P[6]  = c.cy;
         camera_info_rgb_->P[11] = 1.0;
-
-        return;
     };
 
     auto convertIRInfo = [this] () {
@@ -189,6 +187,32 @@ void Kinect2Node::publish()
         }
 
         camera_info_ir_.reset(new sensor_msgs::CameraInfo);
+
+        camera_info_ir_->header.frame_id = frame_id_ir_;
+
+        camera_info_ir_->width  = kinterface_camera_paramters_->width_ir;
+        camera_info_ir_->height = kinterface_camera_paramters_->height_ir;
+
+        libfreenect2::Freenect2Device::IrCameraParams &i = kinterface_camera_paramters_->ir;
+
+        camera_info_ir_->distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
+        camera_info_ir_->D = {i.k1, i.k2, i.p1, i.p2, i.k3};
+
+        camera_info_ir_->K[0]  = i.fx;
+        camera_info_ir_->K[2]  = i.cx;
+        camera_info_ir_->K[4]  = i.fy;
+        camera_info_ir_->K[5]  = i.cy;
+        camera_info_ir_->K[8]  = 1.0;
+
+        camera_info_ir_->R[0]  = 1.0;
+        camera_info_ir_->R[4]  = 1.0;
+        camera_info_ir_->K[8]  = 1.0;
+
+        camera_info_ir_->P[0]  = i.fx;
+        camera_info_ir_->P[2]  = i.cx;
+        camera_info_ir_->P[5]  = i.fy;
+        camera_info_ir_->P[6]  = i.cy;
+        camera_info_ir_->P[11] = 1.0;
 
         return;
     };
@@ -205,7 +229,7 @@ void Kinect2Node::publish()
             pub_rgb_.publish(image_rgb_);
         }
         if(kinterface_parameters_.get_ir) {
-            convertFloat(data->ir, frame_id_depth_, image_ir_);
+            convertFloat(data->ir, frame_id_ir_, image_ir_);
             if(!camera_info_ir_) {
                 convertIRInfo();
             }
@@ -213,19 +237,19 @@ void Kinect2Node::publish()
             pub_ir_.publish(image_ir_);
         }
         if(kinterface_parameters_.get_depth) {
-            convertFloat(data->depth, frame_id_depth_, image_depth_);
+            convertFloat(data->depth, frame_id_ir_, image_depth_);
             pub_depth_.publish(image_depth_);
         }
         if(kinterface_parameters_.get_depth_rectified) {
-            convertFloat(data->depth_rectified, frame_id_depth_, image_depth_rectified_);
+            convertFloat(data->depth_rectified, frame_id_ir_, image_depth_rectified_);
             pub_depth_undistorted_.publish(image_depth_rectified_);
         }
         if(kinterface_parameters_.get_rgb_registered) {
-            convertRGB(data->rgb_registered, frame_id_depth_, image_rgb_registered_);
+            convertRGB(data->rgb_registered, frame_id_ir_, image_rgb_registered_);
             pub_rgb_registered_.publish(image_rgb_registered_);
         }
         if(!data->points->points.empty()) {
-            data->points->header.frame_id = frame_id_depth_;
+            data->points->header.frame_id = frame_id_ir_;
             pub_pointcloud_.publish(data->points);
         }
     }

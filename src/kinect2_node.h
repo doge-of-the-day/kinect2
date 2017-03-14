@@ -39,12 +39,12 @@ public:
     ros::Publisher               pub_pointcloud_;
 
     std::string                  frame_id_rgb_;
-    std::string                  frame_id_depth_;
+    std::string                  frame_id_ir_;
     std::string                  frame_id_;
 
-    Kinect2Interface::CameraParameters kinterface_camera_paramters_;
-    Kinect2Interface::Parameters       kinterface_parameters_;
-    Kinect2Interface                   kinterface_;
+    Kinect2Interface::CameraParameters::Ptr kinterface_camera_paramters_;
+    Kinect2Interface::Parameters            kinterface_parameters_;
+    Kinect2Interface                        kinterface_;
 
 
     sensor_msgs::CameraInfo::Ptr camera_info_rgb_;
