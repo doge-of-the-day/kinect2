@@ -1,6 +1,10 @@
 #include "kinect2_node.h"
 
 #include <pcl_ros/point_cloud.h>
+#include <sensor_msgs/Image.h>
+#include <sensor_msgs/image_encodings.h>
+#include <sensor_msgs/PointCloud2.h>
+
 
 Kinect2Node::Kinect2Node() :
     nh_private_("~")
@@ -150,7 +154,7 @@ void Kinect2Node::publish()
         return image;
     };
 
-    Kinect2Interface::Bundle bundle;
+    Kinect2Interface::Data bundle;
     if(kinterface_.getData(bundle)) {
 
         if(!bundle.rgb.data.empty()) {

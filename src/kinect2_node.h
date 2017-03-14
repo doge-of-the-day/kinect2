@@ -1,9 +1,6 @@
 #ifndef KINECT2_NODE_H
 #define KINECT2_NODE_H
 
-#include <sensor_msgs/Image.h>
-#include <sensor_msgs/image_encodings.h>
-#include <sensor_msgs/PointCloud2.h>
 
 #include <ros/ros.h>
 

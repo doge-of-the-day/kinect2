@@ -31,13 +31,15 @@ namespace libfreenect2 {
 class Kinect2Interface
 {
 public:
+    enum PipelineType {CPU, GL, OCL, CUDA};
+
     template<typename T>
     struct Stamped {
         T data;
         uint32_t stamp;
     };
 
-    struct Bundle {
+    struct Data {
         Stamped<cv::Mat>                       ir;
         Stamped<cv::Mat>                       rgb;
         Stamped<cv::Mat>                       depth;
@@ -45,7 +47,7 @@ public:
         Stamped<cv::Mat>                       rgb_registered;
         pcl::PointCloud<pcl::PointXYZRGB>      points;
 
-        void clone(Bundle &dst) const
+        void clone(Data &dst) const
         {
             if(!ir.data.empty()) {
                 dst.ir.data                 = ir.data.clone();
@@ -69,10 +71,26 @@ public:
             }
             dst.points                      = points;
         }
-
     };
 
-    enum PipelineType {CPU, GL, OCL, CUDA};
+    struct CameraParameters {
+        using Ir = libfreenect2::Freenect2Device::IrCameraParams;
+        using Color = libfreenect2::Freenect2Device::ColorCameraParams;
+
+         Ir          ir;
+         Color       color;
+
+         std::string serial;
+         std::string firmware;
+
+         const std::size_t bpp               = 4;
+         const std::size_t width_rgb        = 1080;
+         const std::size_t height_rgb       = 1920;
+         const std::size_t size_rgb         = bpp * height_rgb * width_rgb;
+         const std::size_t depth_width      = 512;
+         const std::size_t depth_height     = 424;
+         const std::size_t depth_size       = depth_height * depth_width * bpp;
+    };
 
     struct Parameters {
         Kinect2Interface::PipelineType mode = CUDA;
@@ -81,6 +99,9 @@ public:
         bool buffer_depth             = false;
         bool buffer_depth_undistorted = false;
         bool buffer_rgb_registered    = false;
+
+        bool activate_edge_filter     = false;
+        bool activate_bilateral_filter= false;
     };
 
     Kinect2Interface();
@@ -91,17 +112,13 @@ public:
     bool start();
     bool stop();
 
-    bool getData(Bundle &data);
+    bool getData(Data &data);
+    bool getCameraParameters(CameraParameters &camera_parameters);
+
 
 private:
     /// general information about kinect data
-    const std::size_t bpp        = 4;
-    const std::size_t width_rgb  = 1080;
-    const std::size_t height_rgb = 1920;
-    const std::size_t size_rgb   = bpp * height_rgb * width_rgb;
-    const std::size_t width      = 512;
-    const std::size_t height     = 424;
-    const std::size_t size       = height * width * bpp;
+    CameraParameters                        camera_parameters_;
 
 
     std::atomic_bool                        is_running_;
@@ -113,14 +130,14 @@ private:
     libfreenect2::SyncMultiFrameListenerPtr listener_;
     libfreenect2::FrameMap                  frames_;
 
-    std::string serial_;
+    std::string                             serial_;
 
     libfreenect2::FramePtr                  frame_depth_undistorted_;
     libfreenect2::FramePtr                  frame_rgb_registered_;
     libfreenect2::RegistrationPtr           registration_;
 
     std::mutex                              data_mutex_;
-    Bundle                                  data_;
+    Data                                  data_;
 
     std::condition_variable                 data_available_;
 
