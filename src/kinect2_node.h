@@ -2,8 +2,16 @@
 #define KINECT2_NODE_H
 
 
+/// SYSTEM
 #include <ros/ros.h>
+#include <sensor_msgs/CameraInfo.h>
+#include <pcl_ros/point_cloud.h>
+#include <sensor_msgs/Image.h>
+#include <sensor_msgs/image_encodings.h>
+#include <sensor_msgs/PointCloud2.h>
 
+
+/// PROJECT
 #include "kinect2_interface.h"
 
 class Kinect2Node
@@ -20,7 +28,6 @@ public:
     ros::NodeHandle nh_;
 
     double         pub_rate_preferred_;
-    double         maximum_depth_;
 
     ros::Publisher pub_rgb_;
     ros::Publisher pub_depth_;
@@ -33,6 +40,20 @@ public:
     std::string    frame_id_depth_;
 
     Kinect2Interface kinterface_;
+
+
+    sensor_msgs::CameraInfo::Ptr camera_info_rgb_;
+    sensor_msgs::CameraInfo::Ptr camera_info_ir_;
+
+    sensor_msgs::Image::Ptr      image_ir_;
+    sensor_msgs::Image::Ptr      image_depth_;
+    sensor_msgs::Image::Ptr      image_depth_undistorted_;
+    sensor_msgs::Image::Ptr      image_rgb_;
+    sensor_msgs::Image::Ptr      image_rgb_registered_;
+
+
+
+
 
 private:
     void publish();

@@ -40,12 +40,14 @@ public:
     };
 
     struct Data {
+        using Ptr = std::shared_ptr<Data>;
+
         Stamped<cv::Mat>                       ir;
         Stamped<cv::Mat>                       rgb;
         Stamped<cv::Mat>                       depth;
         Stamped<cv::Mat>                       depth_undistorted;
         Stamped<cv::Mat>                       rgb_registered;
-        pcl::PointCloud<pcl::PointXYZRGB>      points;
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr points;
 
         void clone(Data &dst) const
         {
@@ -83,6 +85,15 @@ public:
          std::string serial;
          std::string firmware;
 
+         CameraParameters & operator = (CameraParameters &other)
+         {
+            ir = other.ir;
+            color = other.color;
+            serial = other.serial;
+            firmware = other.firmware;
+            return *this;
+         }
+
          const std::size_t bpp               = 4;
          const std::size_t width_rgb        = 1080;
          const std::size_t height_rgb       = 1920;
@@ -94,11 +105,11 @@ public:
 
     struct Parameters {
         Kinect2Interface::PipelineType mode = CUDA;
-        bool buffer_rgb               = false;
-        bool buffer_ir                = true;
-        bool buffer_depth             = false;
-        bool buffer_depth_undistorted = false;
-        bool buffer_rgb_registered    = false;
+        bool get_rgb                  = false;
+        bool get_ir                   = true;
+        bool get_depth                = false;
+        bool get_depth_undistorted    = false;
+        bool get_rgb_registered       = false;
 
         bool activate_edge_filter     = false;
         bool activate_bilateral_filter= false;
@@ -111,15 +122,16 @@ public:
 
     bool start();
     bool stop();
+    bool waitForStart();
 
-    bool getData(Data &data);
+    Data::Ptr getData();
     bool getCameraParameters(CameraParameters &camera_parameters);
 
 
 private:
     /// general information about kinect data
+    std::mutex                              camera_parameters_mutex_;
     CameraParameters                        camera_parameters_;
-
 
     std::atomic_bool                        is_running_;
     std::atomic_bool                        shutdown_;
@@ -137,13 +149,15 @@ private:
     libfreenect2::RegistrationPtr           registration_;
 
     std::mutex                              data_mutex_;
-    Data                                  data_;
-
     std::condition_variable                 data_available_;
+    Data::Ptr                               data_;
+
+    Parameters                              parameters_;
 
     std::thread                             thread_;
 
     void loop();
+    void setupData();
 };
 
 #endif // KINECT2_INTERFACE_H

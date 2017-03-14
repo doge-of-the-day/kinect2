@@ -22,7 +22,9 @@ bool Kinect2Interface::setup(const Parameters &parameters)
 
     std::cout << "freenect2 version: " << LIBFREENECT2_VERSION << std::endl;
 
-    switch(parameters.mode) {
+    parameters_ = parameters;
+
+    switch(parameters_.mode) {
     case CPU:
         pipeline_.reset(new libfreenect2::CpuPacketPipeline());
         break;
@@ -71,35 +73,12 @@ bool Kinect2Interface::setup(const Parameters &parameters)
     device_->setColorFrameListener(listener_.get());
     device_->setIrAndDepthFrameListener(listener_.get());
 
-    frame_depth_undistorted_.reset(new libfreenect2::Frame (512, 424, 4));
-    frame_rgb_registered_.reset(new libfreenect2::Frame (512, 424, 4));
-
-    if(parameters.buffer_rgb)
-        data_.rgb.data                = cv::Mat(camera_parameters_.height_rgb,
-                                                camera_parameters_.width_rgb,
-                                                CV_8UC4, cv::Scalar());
-    if(parameters.buffer_ir)
-        data_.ir.data                 = cv::Mat(camera_parameters_.depth_height,
-                                                camera_parameters_.depth_width,
-                                                CV_32FC1, cv::Scalar());
-    if(parameters.buffer_depth)
-        data_.depth.data              = cv::Mat(camera_parameters_.depth_height,
-                                                camera_parameters_.depth_width,
-                                                CV_32FC1, cv::Scalar());
-    if(parameters.buffer_rgb_registered)
-        data_.rgb_registered.data     = cv::Mat(camera_parameters_.depth_height,
-                                                camera_parameters_.depth_width,
-                                                CV_8UC4, cv::Scalar());
-    if(parameters.buffer_depth_undistorted)
-        data_.depth_undistorted.data  = cv::Mat(camera_parameters_.depth_height,
-                                                camera_parameters_.depth_width,
-                                                CV_32FC1, cv::Scalar());
-
-    data_.points.height           = camera_parameters_.depth_height;
-    data_.points.width            = camera_parameters_.depth_width;
-    data_.points.is_dense         = true;
-    data_.points.points.resize(camera_parameters_.depth_height *
-                               camera_parameters_.depth_width);
+    frame_depth_undistorted_.reset(new libfreenect2::Frame (camera_parameters_.depth_width,
+                                                            camera_parameters_.depth_height,
+                                                            camera_parameters_.bpp));
+    frame_rgb_registered_.reset(new libfreenect2::Frame (camera_parameters_.depth_width,
+                                                         camera_parameters_.depth_height,
+                                                         camera_parameters_.bpp));
 
     return true;
 }
@@ -122,19 +101,20 @@ bool Kinect2Interface::stop()
         thread_.join();
 }
 
-bool Kinect2Interface::getData(Data &data)
+Kinect2Interface::Data::Ptr Kinect2Interface::getData()
 {
     std::unique_lock<std::mutex> l(data_mutex_);
     data_available_.wait(l);
     if(!is_running_)
-        return false;
-    data_.clone(data);
-    return true;
+        return Data::Ptr();
+    return data_;
 }
 
 bool Kinect2Interface::getCameraParameters(CameraParameters &camera_parameters)
 {
-
+    std::unique_lock<std::mutex> l(camera_parameters_mutex_);
+    camera_parameters = camera_parameters_;
+    return !is_running_;
 }
 
 void Kinect2Interface::loop()
@@ -143,17 +123,20 @@ void Kinect2Interface::loop()
         is_running_ = false;
     }
 
-    is_running_ = true;
 
 //    std::cout << "device serial: " << device_->getSerialNumber() << std::endl;
 //    std::cout << "device firmware: " << device_->getFirmwareVersion() << std::endl;
 
-    camera_parameters_.serial = device_->getSerialNumber();
+    camera_parameters_.serial   = device_->getSerialNumber();
     camera_parameters_.firmware = device_->getFirmwareVersion();
 
-    registration_.reset(new libfreenect2::Registration(device_->getIrCameraParams(),
-                                                       device_->getColorCameraParams()));
+    camera_parameters_.color    = device_->getColorCameraParams();
+    camera_parameters_.ir       = device_->getIrCameraParams();
 
+    registration_.reset(new libfreenect2::Registration(camera_parameters_.ir,
+                                                       camera_parameters_.color));
+
+    is_running_ = true;
     while(!shutdown_) {
         if(!listener_->waitForNewFrame(frames_, 10*1000)) {
             std::cerr << "[Kinect2Interface]: Listener Timeout!" << std::endl;
@@ -168,28 +151,28 @@ void Kinect2Interface::loop()
             {
                 std::unique_lock<std::mutex> l(data_mutex_);
                 /// BUFFER THE DATA IN THE BUNDLE OBJECT
-                if(!data_.rgb.data.empty()) {
-                    std::memcpy(data_.rgb.data.data, rgb->data, camera_parameters_.size_rgb);
-                    data_.rgb.stamp = rgb->timestamp;
+                if(parameters_.get_rgb) {
+                    std::memcpy(data_->rgb.data.data, rgb->data, camera_parameters_.size_rgb);
+                    data_->rgb.stamp = rgb->timestamp;
                 }
-                if(!data_.ir.data.empty()) {
-                    std::memcpy(data_.ir.data.data, ir->data, camera_parameters_.depth_size);
-                    data_.ir.stamp = ir->timestamp;
+                if(parameters_.get_ir) {
+                    std::memcpy(data_->ir.data.data, ir->data, camera_parameters_.depth_size);
+                    data_->ir.stamp = ir->timestamp;
                 }
-                if(!data_.depth.data.empty()) {
-                    std::memcpy(data_.depth.data.data, depth->data, camera_parameters_.depth_size);
-                    data_.depth.stamp = depth->timestamp;
+                if(parameters_.get_depth) {
+                    std::memcpy(data_->depth.data.data, depth->data, camera_parameters_.depth_size);
+                    data_->depth.stamp = depth->timestamp;
                 }
-                if(!data_.depth_undistorted.data.empty()) {
-                    std::memcpy(data_.depth_undistorted.data.data, frame_depth_undistorted_->data, camera_parameters_.depth_size);
-                    data_.depth_undistorted.stamp = frame_depth_undistorted_->timestamp;
+                if(parameters_.get_depth_undistorted) {
+                    std::memcpy(data_->depth_undistorted.data.data, frame_depth_undistorted_->data, camera_parameters_.depth_size);
+                    data_->depth_undistorted.stamp = frame_depth_undistorted_->timestamp;
                 }
-                if(!data_.rgb_registered.data.empty()) {
-                    std::memcpy(data_.rgb_registered.data.data, frame_rgb_registered_->data, camera_parameters_.depth_size);
-                    data_.rgb_registered.stamp = frame_rgb_registered_->timestamp;
+                if(parameters_.get_rgb_registered) {
+                    std::memcpy(data_->rgb_registered.data.data, frame_rgb_registered_->data, camera_parameters_.depth_size);
+                    data_->rgb_registered.stamp = frame_rgb_registered_->timestamp;
                 }
 
-                pcl::PointXYZRGB *points_ptr = data_.points.points.data();
+                pcl::PointXYZRGB *points_ptr = data_->points->points.data();
                 for(std::size_t i = 0 ; i < camera_parameters_.depth_height ; ++i) {
                     for(std::size_t j = 0 ; j < camera_parameters_.depth_width ; ++j) {
                         pcl::PointXYZRGB &p = points_ptr[i * camera_parameters_.depth_width + j];
@@ -207,4 +190,38 @@ void Kinect2Interface::loop()
     device_->close();
     is_running_ = false;
     data_available_.notify_one(); /// drop waiting thread
+}
+
+void Kinect2Interface::setupData()
+{
+    data_.reset(new Data);
+
+    if(parameters_.get_rgb)
+        data_->rgb.data                = cv::Mat(camera_parameters_.height_rgb,
+                                                 camera_parameters_.width_rgb,
+                                                 CV_8UC4, cv::Scalar());
+    if(parameters_.get_ir)
+        data_->ir.data                 = cv::Mat(camera_parameters_.depth_height,
+                                                 camera_parameters_.depth_width,
+                                                 CV_32FC1, cv::Scalar());
+    if(parameters_.get_depth)
+        data_->depth.data              = cv::Mat(camera_parameters_.depth_height,
+                                                 camera_parameters_.depth_width,
+                                                 CV_32FC1, cv::Scalar());
+    if(parameters_.get_rgb_registered)
+        data_->rgb_registered.data     = cv::Mat(camera_parameters_.depth_height,
+                                                 camera_parameters_.depth_width,
+                                                 CV_8UC4, cv::Scalar());
+    if(parameters_.get_depth_undistorted)
+        data_->depth_undistorted.data  = cv::Mat(camera_parameters_.depth_height,
+                                                 camera_parameters_.depth_width,
+                                                 CV_32FC1, cv::Scalar());
+
+    data_->points.reset(new pcl::PointCloud<pcl::PointXYZRGB>);
+    data_->points->height  = camera_parameters_.depth_height;
+    data_->points->width    = camera_parameters_.depth_width;
+    data_->points->is_dense = true;
+    data_->points->points.resize(camera_parameters_.depth_height *
+                                camera_parameters_.depth_width);
+
 }

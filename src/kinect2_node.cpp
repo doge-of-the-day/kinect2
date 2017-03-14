@@ -1,10 +1,5 @@
+/// HEADER
 #include "kinect2_node.h"
-
-#include <pcl_ros/point_cloud.h>
-#include <sensor_msgs/Image.h>
-#include <sensor_msgs/image_encodings.h>
-#include <sensor_msgs/PointCloud2.h>
-
 
 Kinect2Node::Kinect2Node() :
     nh_private_("~")
@@ -25,7 +20,6 @@ bool Kinect2Node::setup()
     const std::string topic_depth_unidstorted = nh_private_.param<std::string>("topic_depth_undistorted", "/kinect2_node/depth_undistorted");
     const std::string topic_pointcloud        = nh_private_.param<std::string>("topic_rgb", "/kinect2_node/point");
     pub_rate_preferred_                       = nh_private_.param<double>("preferred_publication_rate", -1.0);
-    maximum_depth_                            = nh_private_.param<double>("maximum_depth", 10.0);
     frame_id_rgb_                             = nh_private_.param<std::string>("frame_id_rgb", "kinect2_rgb_optical_frame");
     frame_id_depth_                           = nh_private_.param<std::string>("frame_id_depth", "kinect_depth_optical_frame");
 
@@ -37,12 +31,12 @@ bool Kinect2Node::setup()
     bool publish_depth_undistorted = nh_private_.param<bool>("publish_depth_undistorted", false);
 
     Kinect2Interface::Parameters parameters;
-    parameters.buffer_rgb = publish_rgb;
-    parameters.buffer_ir = publish_ir;
-    parameters.buffer_depth = publish_depth;
-    parameters.buffer_rgb_registered = publish_rgb_registered;
-    parameters.buffer_depth = publish_depth;
-    parameters.buffer_depth_undistorted = publish_depth_undistorted;
+    parameters.get_rgb = publish_rgb;
+    parameters.get_ir = publish_ir;
+    parameters.get_depth = publish_depth;
+    parameters.get_rgb_registered = publish_rgb_registered;
+    parameters.get_depth = publish_depth;
+    parameters.get_depth_undistorted = publish_depth_undistorted;
 
     if(!kinterface_.setup(parameters)) {
         std::cerr << "[Kinect2Node]: Cannot setup Kinect2Interface!" << std::endl;
@@ -94,23 +88,27 @@ int Kinect2Node::run()
 void Kinect2Node::publish()
 {
     auto convertRGB = [](const Kinect2Interface::Stamped<cv::Mat> &rgb,
-            const std::string &frame_id){
-        sensor_msgs::Image::Ptr image(new sensor_msgs::Image);
-        image->header.stamp = ros::Time(rgb.stamp * 1e-4);
-        image->header.frame_id = frame_id;
-
-        const std::size_t rows = rgb.data.rows;
-        const std::size_t cols = rgb.data.cols;
-        const std::size_t channels = 3;
+                         const std::string &frame_id,
+                         sensor_msgs::Image::Ptr &image){
+        const std::size_t rows         = rgb.data.rows;
+        const std::size_t cols         = rgb.data.cols;
         const std::size_t rgb_channels = rgb.data.channels();
-        const std::size_t bbc = 1;
+        const std::size_t channels     = 3;
 
-        image->height       = rows;
-        image->width        = cols;
-        image->encoding     = sensor_msgs::image_encodings::RGB8;
-        image->is_bigendian = false;
-        image->step         = cols * channels * bbc;
-        image->data.resize(channels * rows * cols);
+        if(!image) {
+            image.reset(new sensor_msgs::Image);
+            const std::size_t bbc = 1;
+
+            image->height       = rows;
+            image->width        = cols;
+            image->encoding     = sensor_msgs::image_encodings::RGB8;
+            image->is_bigendian = false;
+            image->step         = cols * channels * bbc;
+            image->data.resize(channels * rows * cols);
+            image->header.frame_id = frame_id;
+        }
+
+        image->header.stamp = ros::Time(rgb.stamp * 1e-4);
 
         const uchar * rgb_ptr = rgb.data.data;
         uchar * image_ptr = image->data.data();
@@ -122,59 +120,64 @@ void Kinect2Node::publish()
                 }
             }
         }
-        return image;
     };
 
     auto convertFloat = [](const Kinect2Interface::Stamped<cv::Mat> &mat,
-            const std::string &frame_id,
-            const double normalization_factor = 1.0)
+                           const std::string &frame_id,
+                           sensor_msgs::Image::Ptr &image)
     {
-        sensor_msgs::Image::Ptr image(new sensor_msgs::Image);
-        image->header.stamp = ros::Time(mat.stamp * 1e-4);
-        image->header.frame_id = frame_id;
-
         const std::size_t rows = mat.data.rows;
         const std::size_t cols = mat.data.cols;
         const std::size_t bbp = 2;
 
-        image->height       = rows;
-        image->width        = cols;
-        image->encoding     = sensor_msgs::image_encodings::MONO16;
-        image->is_bigendian = false;
-        image->step         = mat.data.cols * bbp;
-        image->data.resize(bbp * rows * cols);
+        if(!image) {
+            image.reset(new sensor_msgs::Image);
+            image->height       = rows;
+            image->width        = cols;
+            image->encoding     = sensor_msgs::image_encodings::MONO16;
+            image->is_bigendian = false;
+            image->step         = mat.data.cols * bbp;
+            image->data.resize(bbp * rows * cols);
+            image->header.frame_id = frame_id;
+        }
+
+        image->header.stamp = ros::Time(mat.stamp * 1e-4);
 
         const float * mat_ptr = mat.data.ptr<float>();
         ushort * image_ptr = (ushort*) image->data.data();
         for(std::size_t i = 0 ; i < rows ; ++i) {
             for(std::size_t j = 0 ; j < cols ; ++j) {
-                image_ptr[i * cols + j] = mat_ptr[i * cols + (cols - j - 1)] * normalization_factor;
+                image_ptr[i * cols + j] =
+                        mat_ptr[i * cols + (cols - j - 1)];
             }
         }
-        return image;
     };
 
-    Kinect2Interface::Data bundle;
-    if(kinterface_.getData(bundle)) {
-
-        if(!bundle.rgb.data.empty()) {
-            pub_rgb_.publish(convertRGB(bundle.rgb, frame_id_rgb_));
+    Kinect2Interface::Data::Ptr data = kinterface_.getData();
+    if(data) {
+        if(!data->rgb.data.empty()) {
+            convertRGB(data->rgb, frame_id_rgb_, image_rgb_);
+            pub_rgb_.publish(image_rgb_);
         }
-        if(!bundle.ir.data.empty()) {
-            pub_ir_.publish(convertFloat(bundle.ir, frame_id_depth_));
+        if(!data->ir.data.empty()) {
+            convertFloat(data->ir, frame_id_depth_, image_ir_);
+            pub_ir_.publish(image_ir_);
         }
-        if(!bundle.depth.data.empty()) {
-            pub_depth_.publish(convertFloat(bundle.depth, frame_id_depth_, maximum_depth_));
+        if(!data->depth.data.empty()) {
+            convertFloat(data->depth, frame_id_depth_, image_depth_);
+            pub_depth_.publish(image_depth_);
         }
-        if(!bundle.depth_undistorted.data.empty()) {
-            pub_depth_undistorted_.publish(convertFloat(bundle.depth_undistorted, frame_id_depth_, maximum_depth_));
+        if(!data->depth_undistorted.data.empty()) {
+            convertFloat(data->depth_undistorted, frame_id_depth_, image_depth_undistorted_);
+            pub_depth_undistorted_.publish(image_depth_undistorted_);
         }
-        if(!bundle.rgb_registered.data.empty()) {
-            pub_rgb_registered_.publish(convertRGB(bundle.rgb_registered, frame_id_depth_));
+        if(!data->rgb_registered.data.empty()) {
+            convertRGB(data->rgb_registered, frame_id_depth_, image_rgb_registered_);
+            pub_rgb_registered_.publish(image_rgb_registered_);
         }
-        if(!bundle.points.points.empty()) {
-            bundle.points.header.frame_id = frame_id_depth_;
-            pub_pointcloud_.publish(bundle.points);
+        if(!data->points->points.empty()) {
+            data->points->header.frame_id = frame_id_depth_;
+            pub_pointcloud_.publish(data->points);
         }
     }
 }
