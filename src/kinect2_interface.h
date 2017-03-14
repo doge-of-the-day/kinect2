@@ -27,6 +27,9 @@ namespace libfreenect2 {
     using RegistrationPtr = std::shared_ptr<libfreenect2::Registration>;
 }
 
+/**
+ * @brief The Kinect2Interface class
+ */
 class Kinect2Interface
 {
 public:

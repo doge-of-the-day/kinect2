@@ -12,6 +12,9 @@
 /// PROJECT
 #include "kinect2_interface.h"
 
+/**
+ * @brief The Kinect2Node class
+ */
 class Kinect2Node
 {
 public:
