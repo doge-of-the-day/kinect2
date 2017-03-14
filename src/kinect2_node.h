@@ -32,6 +32,7 @@ public:
     ros::Publisher               pub_rgb_;
     ros::Publisher               pub_rgb_info_;
     ros::Publisher               pub_depth_;
+    ros::Publisher               pub_depth_info_;
     ros::Publisher               pub_ir_;
     ros::Publisher               pub_ir_info_;
     ros::Publisher               pub_rgb_registered_;

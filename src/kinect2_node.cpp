@@ -18,6 +18,7 @@ bool Kinect2Node::setup()
     const std::string topic_rgb               = nh_private_.param<std::string>("topic_rgb",                 "/kinect2/image_color");
     const std::string topic_rgb_info          = nh_private_.param<std::string>("topic_rgb_info",            "/kinect2/camera_info/image_color");
     const std::string topic_depth             = nh_private_.param<std::string>("topic_depth",               "/kinect2/depth");
+    const std::string topic_depth_info        = nh_private_.param<std::string>("topic_depth_info",          "/kinect2/camera_info/depth");
     const std::string topic_ir                = nh_private_.param<std::string>("topic_ir",                  "/kinect2/image_ir");
     const std::string topic_ir_info           = nh_private_.param<std::string>("topic_ir_info",             "/kinect2/camera_info/image_ir");
     const std::string topic_rgb_registered    = nh_private_.param<std::string>("topic_rgb_registered",      "/kinect2/rgb_registered");
@@ -46,6 +47,7 @@ bool Kinect2Node::setup()
     }
     if(kinterface_parameters_.get_depth) {
         pub_depth_ = nh_.advertise<sensor_msgs::Image>(topic_depth, 1);
+        pub_depth_info = nh_.advertise<sensor_msgs::CameraInfo>(topic_depth_info, 1);
     }
     if(kinterface_parameters_.get_ir) {
         pub_ir_ = nh_.advertise<sensor_msgs::Image>(topic_ir, 1);
@@ -84,8 +86,8 @@ int Kinect2Node::run()
 void Kinect2Node::publish()
 {
     auto convertRGB = [](const Kinect2Interface::Stamped<cv::Mat> &rgb,
-                         const std::string &frame_id,
-                         sensor_msgs::Image::Ptr &image){
+            const std::string &frame_id,
+            sensor_msgs::Image::Ptr &image){
         const std::size_t rows         = rgb.data.rows;
         const std::size_t cols         = rgb.data.cols;
         const std::size_t rgb_channels = rgb.data.channels();
@@ -119,8 +121,8 @@ void Kinect2Node::publish()
     };
 
     auto convertFloat = [](const Kinect2Interface::Stamped<cv::Mat> &mat,
-                           const std::string &frame_id,
-                           sensor_msgs::Image::Ptr &image)
+            const std::string &frame_id,
+            sensor_msgs::Image::Ptr &image)
     {
         const std::size_t rows = mat.data.rows;
         const std::size_t cols = mat.data.cols;
@@ -149,96 +151,102 @@ void Kinect2Node::publish()
         }
     };
 
-    auto convertRGBInfo = [this] () {
-        if(!kinterface_camera_paramters_) {
-            kinterface_.getCameraParameters(*kinterface_camera_paramters_);
+    auto updateRGBInfo = [this] () {
+        if(!camera_info_rgb_) {
+            if(!kinterface_camera_paramters_) {
+                kinterface_.getCameraParameters(*kinterface_camera_paramters_);
+            }
+
+            camera_info_rgb_.reset(new sensor_msgs::CameraInfo);
+
+            camera_info_rgb_->header.frame_id = frame_id_rgb_;
+
+            camera_info_rgb_->width = kinterface_camera_paramters_->width_rgb;
+            camera_info_rgb_->height = kinterface_camera_paramters_->height_rgb;
+
+            camera_info_rgb_->distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
+            camera_info_rgb_->D = {};   /// per default these parameters are not known to libfreenect2
+
+            libfreenect2::Freenect2Device::ColorCameraParams &c = kinterface_camera_paramters_->color;
+            camera_info_rgb_->K[0]  = c.fx;
+            camera_info_rgb_->K[2]  = c.cx;
+            camera_info_rgb_->K[4]  = c.fy;
+            camera_info_rgb_->K[5]  = c.cy;
+            camera_info_rgb_->K[8]  = 1.0;
+
+            camera_info_rgb_->R[0]  = 1.0;
+            camera_info_rgb_->R[4]  = 1.0;
+            camera_info_rgb_->K[8]  = 1.0;
+
+            camera_info_rgb_->P[0]  = c.fx;
+            camera_info_rgb_->P[2]  = c.cx;
+            camera_info_rgb_->P[5]  = c.fy;
+            camera_info_rgb_->P[6]  = c.cy;
+            camera_info_rgb_->P[11] = 1.0;
         }
 
-        camera_info_rgb_.reset(new sensor_msgs::CameraInfo);
-        camera_info_rgb_->header.frame_id = frame_id_rgb_;
-
-        camera_info_rgb_->width = kinterface_camera_paramters_->width_rgb;
-        camera_info_rgb_->height = kinterface_camera_paramters_->height_rgb;
-
-        camera_info_rgb_->distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
-        // camera_info_rgb_->D;    /// there are no parameters in the driver
-
-        libfreenect2::Freenect2Device::ColorCameraParams &c = kinterface_camera_paramters_->color;
-        camera_info_rgb_->K[0]  = c.fx;
-        camera_info_rgb_->K[2]  = c.cx;
-        camera_info_rgb_->K[4]  = c.fy;
-        camera_info_rgb_->K[5]  = c.cy;
-        camera_info_rgb_->K[8]  = 1.0;
-
-        camera_info_rgb_->R[0]  = 1.0;
-        camera_info_rgb_->R[4]  = 1.0;
-        camera_info_rgb_->K[8]  = 1.0;
-
-        camera_info_rgb_->P[0]  = c.fx;
-        camera_info_rgb_->P[2]  = c.cx;
-        camera_info_rgb_->P[5]  = c.fy;
-        camera_info_rgb_->P[6]  = c.cy;
-        camera_info_rgb_->P[11] = 1.0;
+        camera_info_rgb_->header.stamp = ros::Time::now();
     };
 
-    auto convertIRInfo = [this] () {
-        if(!kinterface_camera_paramters_) {
-            kinterface_.getCameraParameters(*kinterface_camera_paramters_);
+    auto updateIRInfo = [this] () {
+        if(!camera_info_ir_) {
+            if(!kinterface_camera_paramters_) {
+                kinterface_.getCameraParameters(*kinterface_camera_paramters_);
+            }
+
+            camera_info_ir_.reset(new sensor_msgs::CameraInfo);
+
+            camera_info_ir_->header.frame_id = frame_id_ir_;
+
+            camera_info_ir_->width  = kinterface_camera_paramters_->width_ir;
+            camera_info_ir_->height = kinterface_camera_paramters_->height_ir;
+
+            libfreenect2::Freenect2Device::IrCameraParams &i = kinterface_camera_paramters_->ir;
+
+            camera_info_ir_->distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
+            camera_info_ir_->D = {i.k1, i.k2, i.p1, i.p2, i.k3};
+
+            camera_info_ir_->K[0]  = i.fx;
+            camera_info_ir_->K[2]  = i.cx;
+            camera_info_ir_->K[4]  = i.fy;
+            camera_info_ir_->K[5]  = i.cy;
+            camera_info_ir_->K[8]  = 1.0;
+
+            camera_info_ir_->R[0]  = 1.0;
+            camera_info_ir_->R[4]  = 1.0;
+            camera_info_ir_->K[8]  = 1.0;
+
+            camera_info_ir_->P[0]  = i.fx;
+            camera_info_ir_->P[2]  = i.cx;
+            camera_info_ir_->P[5]  = i.fy;
+            camera_info_ir_->P[6]  = i.cy;
+            camera_info_ir_->P[11] = 1.0;
         }
 
-        camera_info_ir_.reset(new sensor_msgs::CameraInfo);
-
-        camera_info_ir_->header.frame_id = frame_id_ir_;
-
-        camera_info_ir_->width  = kinterface_camera_paramters_->width_ir;
-        camera_info_ir_->height = kinterface_camera_paramters_->height_ir;
-
-        libfreenect2::Freenect2Device::IrCameraParams &i = kinterface_camera_paramters_->ir;
-
-        camera_info_ir_->distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
-        camera_info_ir_->D = {i.k1, i.k2, i.p1, i.p2, i.k3};
-
-        camera_info_ir_->K[0]  = i.fx;
-        camera_info_ir_->K[2]  = i.cx;
-        camera_info_ir_->K[4]  = i.fy;
-        camera_info_ir_->K[5]  = i.cy;
-        camera_info_ir_->K[8]  = 1.0;
-
-        camera_info_ir_->R[0]  = 1.0;
-        camera_info_ir_->R[4]  = 1.0;
-        camera_info_ir_->K[8]  = 1.0;
-
-        camera_info_ir_->P[0]  = i.fx;
-        camera_info_ir_->P[2]  = i.cx;
-        camera_info_ir_->P[5]  = i.fy;
-        camera_info_ir_->P[6]  = i.cy;
-        camera_info_ir_->P[11] = 1.0;
-
-        return;
+        camera_info_ir_->header.stamp = ros::Time::now();
     };
 
     Kinect2Interface::Data::Ptr data = kinterface_.getData();
     if(data) {
-
         if(kinterface_parameters_.get_rgb) {
             convertRGB(data->rgb, frame_id_rgb_, image_rgb_);
-            if(!camera_info_rgb_) {
-                convertRGBInfo();
-            }
+            updateRGBInfo();
 
             pub_rgb_.publish(image_rgb_);
         }
         if(kinterface_parameters_.get_ir) {
             convertFloat(data->ir, frame_id_ir_, image_ir_);
-            if(!camera_info_ir_) {
-                convertIRInfo();
-            }
-
+            updateIRInfo();
             pub_ir_.publish(image_ir_);
+            pub_ir_info_.publish(camera_info_ir_);
+
         }
         if(kinterface_parameters_.get_depth) {
+            updateIRInfo();
+
             convertFloat(data->depth, frame_id_ir_, image_depth_);
             pub_depth_.publish(image_depth_);
+            pub_depth_info_.publish(camera_info_ir_);
         }
         if(kinterface_parameters_.get_depth_rectified) {
             convertFloat(data->depth_rectified, frame_id_ir_, image_depth_rectified_);
