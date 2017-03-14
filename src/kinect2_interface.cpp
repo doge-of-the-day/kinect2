@@ -150,6 +150,7 @@ void Kinect2Interface::loop()
 
             {
                 std::unique_lock<std::mutex> l(data_mutex_);
+                setupData();
                 /// BUFFER THE DATA IN THE BUNDLE OBJECT
                 if(parameters_.get_rgb) {
                     std::memcpy(data_->rgb.data.data, rgb->data, camera_parameters_.size_rgb);
