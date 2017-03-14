@@ -1,8 +1,8 @@
+/// HEADER
 #include "kinect2_interface.h"
 
-#include <signal.h>
+/// SYSTEM
 #include <cstring>
-
 
 Kinect2Interface::Kinect2Interface() :
     is_running_(false),
@@ -25,6 +25,11 @@ bool Kinect2Interface::setup(const Parameters &parameters)
     parameters_ = parameters;
 
     return true;
+}
+
+bool Kinect2Interface::isRunning()
+{
+    return is_running_;
 }
 
 bool Kinect2Interface::start()
@@ -75,7 +80,6 @@ void Kinect2Interface::loop()
     if(!device_->start()) {
         is_running_ = false;
     }
-
 
     camera_parameters_.serial   = device_->getSerialNumber();
     camera_parameters_.firmware = device_->getFirmwareVersion();

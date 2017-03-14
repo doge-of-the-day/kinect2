@@ -79,14 +79,22 @@ int Kinect2Node::run()
 {
     if(pub_rate_preferred_ <= 0.0) {
         while(ros::ok()) {
-            publish();
+            if(kinterface_.isRunning()) {
+                publish();
+            } else {
+                ros::Rate(1.0).sleep();
+            }
             ros::spinOnce();
         }
     } else {
         ros::Rate rate(pub_rate_preferred_);
         while(ros::ok()) {
-            publish();
-            rate.sleep();
+            if(kinterface_.isRunning()) {
+                publish();
+                rate.sleep();
+            } else {
+                ros::Rate(1.0).sleep();
+            }
         }
     }
     kinterface_.stop();
@@ -272,8 +280,6 @@ void Kinect2Node::publish()
             data->points->header.frame_id = frame_id_ir_;
             pub_pointcloud_.publish(data->points);
         }
-    } else {
-        ros::Rate(1).sleep();
     }
 }
 

@@ -2,6 +2,7 @@
 #define KINECT2_INTERFACE_H
 
 
+/// SYSTEM
 #include <libfreenect2/libfreenect2.hpp>
 #include <libfreenect2/frame_listener_impl.h>
 #include <libfreenect2/registration.h>
@@ -98,6 +99,7 @@ public:
 
     bool setup(const Parameters &parameters);
 
+    bool isRunning();
     bool start();
     bool stop();
 
