@@ -79,7 +79,6 @@ bool Kinect2Interface::setup(const Parameters &parameters)
     frame_rgb_registered_.reset(new libfreenect2::Frame (camera_parameters_.depth_width,
                                                          camera_parameters_.depth_height,
                                                          camera_parameters_.bpp));
-
     return true;
 }
 
@@ -124,9 +123,6 @@ void Kinect2Interface::loop()
     }
 
 
-//    std::cout << "device serial: " << device_->getSerialNumber() << std::endl;
-//    std::cout << "device firmware: " << device_->getFirmwareVersion() << std::endl;
-
     camera_parameters_.serial   = device_->getSerialNumber();
     camera_parameters_.firmware = device_->getFirmwareVersion();
 
@@ -164,9 +160,9 @@ void Kinect2Interface::loop()
                     std::memcpy(data_->depth.data.data, depth->data, camera_parameters_.depth_size);
                     data_->depth.stamp = depth->timestamp;
                 }
-                if(parameters_.get_depth_undistorted) {
-                    std::memcpy(data_->depth_undistorted.data.data, frame_depth_undistorted_->data, camera_parameters_.depth_size);
-                    data_->depth_undistorted.stamp = frame_depth_undistorted_->timestamp;
+                if(parameters_.get_depth_rectified) {
+                    std::memcpy(data_->depth_rectified.data.data, frame_depth_undistorted_->data, camera_parameters_.depth_size);
+                    data_->depth_rectified.stamp = frame_depth_undistorted_->timestamp;
                 }
                 if(parameters_.get_rgb_registered) {
                     std::memcpy(data_->rgb_registered.data.data, frame_rgb_registered_->data, camera_parameters_.depth_size);
@@ -213,8 +209,8 @@ void Kinect2Interface::setupData()
         data_->rgb_registered.data     = cv::Mat(camera_parameters_.depth_height,
                                                  camera_parameters_.depth_width,
                                                  CV_8UC4, cv::Scalar());
-    if(parameters_.get_depth_undistorted)
-        data_->depth_undistorted.data  = cv::Mat(camera_parameters_.depth_height,
+    if(parameters_.get_depth_rectified)
+        data_->depth_rectified.data    = cv::Mat(camera_parameters_.depth_height,
                                                  camera_parameters_.depth_width,
                                                  CV_32FC1, cv::Scalar());
 

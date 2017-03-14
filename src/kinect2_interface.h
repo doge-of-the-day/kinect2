@@ -45,39 +45,15 @@ public:
         Stamped<cv::Mat>                       ir;
         Stamped<cv::Mat>                       rgb;
         Stamped<cv::Mat>                       depth;
-        Stamped<cv::Mat>                       depth_undistorted;
+        Stamped<cv::Mat>                       depth_rectified;
         Stamped<cv::Mat>                       rgb_registered;
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr points;
-
-        void clone(Data &dst) const
-        {
-            if(!ir.data.empty()) {
-                dst.ir.data                 = ir.data.clone();
-                dst.ir.stamp                = ir.stamp;
-            }
-            if(!rgb.data.empty()) {
-                dst.rgb.data                = rgb.data.clone();
-                dst.rgb.stamp               = rgb.stamp;
-            }
-            if(!depth.data.empty()) {
-                dst.depth.data              = depth.data.clone();
-                dst.depth.stamp             = depth.stamp;
-            }
-            if(!depth_undistorted.data.empty()) {
-                dst.depth_undistorted.data  = depth_undistorted.data.clone();
-                dst.depth_undistorted.stamp = depth_undistorted.stamp;
-            }
-            if(!rgb_registered.data.empty()) {
-                dst.rgb_registered.data     = rgb_registered.data.clone();
-                dst.rgb_registered.stamp    = rgb_registered.stamp;
-            }
-            dst.points                      = points;
-        }
     };
 
     struct CameraParameters {
         using Ir = libfreenect2::Freenect2Device::IrCameraParams;
         using Color = libfreenect2::Freenect2Device::ColorCameraParams;
+        using Ptr = std::shared_ptr<CameraParameters>;
 
          Ir          ir;
          Color       color;
@@ -108,7 +84,7 @@ public:
         bool get_rgb                  = false;
         bool get_ir                   = true;
         bool get_depth                = false;
-        bool get_depth_undistorted    = false;
+        bool get_depth_rectified      = false;
         bool get_rgb_registered       = false;
 
         bool activate_edge_filter     = false;

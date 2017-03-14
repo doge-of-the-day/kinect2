@@ -24,22 +24,27 @@ public:
 
     int run();
 
-    ros::NodeHandle nh_private_;
-    ros::NodeHandle nh_;
+    ros::NodeHandle              nh_private_;
+    ros::NodeHandle              nh_;
 
-    double         pub_rate_preferred_;
+    double                       pub_rate_preferred_;
 
-    ros::Publisher pub_rgb_;
-    ros::Publisher pub_depth_;
-    ros::Publisher pub_ir_;
-    ros::Publisher pub_rgb_registered_;
-    ros::Publisher pub_depth_undistorted_;
-    ros::Publisher pub_pointcloud_;
+    ros::Publisher               pub_rgb_;
+    ros::Publisher               pub_rgb_info_;
+    ros::Publisher               pub_depth_;
+    ros::Publisher               pub_ir_;
+    ros::Publisher               pub_ir_info_;
+    ros::Publisher               pub_rgb_registered_;
+    ros::Publisher               pub_depth_undistorted_;
+    ros::Publisher               pub_pointcloud_;
 
-    std::string    frame_id_rgb_;
-    std::string    frame_id_depth_;
+    std::string                  frame_id_rgb_;
+    std::string                  frame_id_depth_;
+    std::string                  frame_id_;
 
-    Kinect2Interface kinterface_;
+    Kinect2Interface::CameraParameters kinterface_camera_paramters_;
+    Kinect2Interface::Parameters       kinterface_parameters_;
+    Kinect2Interface                   kinterface_;
 
 
     sensor_msgs::CameraInfo::Ptr camera_info_rgb_;
@@ -47,7 +52,7 @@ public:
 
     sensor_msgs::Image::Ptr      image_ir_;
     sensor_msgs::Image::Ptr      image_depth_;
-    sensor_msgs::Image::Ptr      image_depth_undistorted_;
+    sensor_msgs::Image::Ptr      image_depth_rectified_;
     sensor_msgs::Image::Ptr      image_rgb_;
     sensor_msgs::Image::Ptr      image_rgb_registered_;
 
