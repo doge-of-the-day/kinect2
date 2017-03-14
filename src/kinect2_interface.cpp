@@ -89,7 +89,6 @@ void Kinect2Interface::loop()
 
     registration_.reset(new libfreenect2::Registration(camera_parameters_.ir,
                                                        camera_parameters_.color));
-
     is_running_ = true;
     while(!shutdown_) {
         if(!listener_->waitForNewFrame(frames_, 1000)) {
