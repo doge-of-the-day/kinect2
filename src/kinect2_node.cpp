@@ -47,7 +47,7 @@ bool Kinect2Node::setup()
     }
     if(kinterface_parameters_.get_depth) {
         pub_depth_ = nh_.advertise<sensor_msgs::Image>(topic_depth, 1);
-        pub_depth_info = nh_.advertise<sensor_msgs::CameraInfo>(topic_depth_info, 1);
+        pub_depth_info_ = nh_.advertise<sensor_msgs::CameraInfo>(topic_depth_info, 1);
     }
     if(kinterface_parameters_.get_ir) {
         pub_ir_ = nh_.advertise<sensor_msgs::Image>(topic_ir, 1);
