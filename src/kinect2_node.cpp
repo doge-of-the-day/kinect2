@@ -164,6 +164,7 @@ void Kinect2Node::publish()
     auto updateRGBInfo = [this] () {
         if(!camera_info_rgb_) {
             if(!kinterface_camera_paramters_) {
+                kinterface_camera_paramters_.reset(new Kinect2Interface::CameraParameters);
                 kinterface_.getCameraParameters(*kinterface_camera_paramters_);
             }
 
@@ -201,6 +202,7 @@ void Kinect2Node::publish()
     auto updateIRInfo = [this] () {
         if(!camera_info_ir_) {
             if(!kinterface_camera_paramters_) {
+                kinterface_camera_paramters_.reset(new Kinect2Interface::CameraParameters);
                 kinterface_.getCameraParameters(*kinterface_camera_paramters_);
             }
 
