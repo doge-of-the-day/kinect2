@@ -46,7 +46,7 @@ bool Kinect2Interface::setup(const Parameters &parameters)
 #ifdef LIBFREENECT2_WITH_CUDA_SUPPORT
         pipeline_.reset(new libfreenect2::CudaPacketPipeline());
 #else
-        std::cerr << "[Kinect2Interface]: CUDA is not supported!" std::endl;
+        std::cerr << "[Kinect2Interface]: CUDA is not supported!" << std::endl;
         return false;
 #endif
         break;
