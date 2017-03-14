@@ -6,6 +6,7 @@ add_definitions(-std=c++11)
 find_package(catkin REQUIRED
     roscpp
     sensor_msgs
+    std_srvs
     pcl_ros
 )
 

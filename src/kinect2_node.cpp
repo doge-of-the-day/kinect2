@@ -1,7 +1,12 @@
 /// HEADER
 #include "kinect2_node.h"
 
+/// SYSTEM
 #include <sensor_msgs/distortion_models.h>
+#include <sensor_msgs/image_encodings.h>
+#include <pcl_ros/point_cloud.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <functional>
 
 Kinect2Node::Kinect2Node() :
     nh_private_("~")
@@ -24,6 +29,9 @@ bool Kinect2Node::setup()
     const std::string topic_rgb_registered    = nh_private_.param<std::string>("topic_rgb_registered",      "/kinect2/rgb_registered");
     const std::string topic_depth_rectified   = nh_private_.param<std::string>("topic_depth_undistorted",   "/kinect2/depth_rectified");
     const std::string topic_pointcloud        = nh_private_.param<std::string>("topic_rgb",                 "/kinect2/points");
+    const std::string service_name_wakeup     = nh_private_.param<std::string>("service_name_wakeup",       "/kinect2/wakeup");
+    const std::string service_name_sleep      = nh_private_.param<std::string>("service_name_sleep",        "/kinect2/sleep");
+
     pub_rate_preferred_                       = nh_private_.param<double>("preferred_publication_rate",     -1.0);
     frame_id_rgb_                             = nh_private_.param<std::string>("frame_id_rgb",              "kinect2_rgb_optical_frame");
     frame_id_ir_                              = nh_private_.param<std::string>("frame_id_ir",               "kinect2_depth_optical_frame");
@@ -61,6 +69,8 @@ bool Kinect2Node::setup()
     }
 
     pub_pointcloud_ = nh_.advertise<pcl::PointCloud<pcl::PointXYZRGB>>(topic_pointcloud, 1);
+    service_sleep_  = nh_.advertiseService(service_name_sleep, &Kinect2Node::sleep, this);
+    service_wakeup_ = nh_.advertiseService(service_name_wakeup, &Kinect2Node::wakeup, this);
 
     kinterface_.start();
 }
@@ -262,6 +272,19 @@ void Kinect2Node::publish()
         }
     }
 }
+
+bool Kinect2Node::sleep(std_srvs::Empty::Request &req,
+                        std_srvs::Empty::Response &res)
+{
+    return kinterface_.stop();
+}
+
+bool Kinect2Node::wakeup(std_srvs::Empty::Request &req,
+                         std_srvs::Empty::Response &res)
+{
+    return kinterface_.start();
+}
+
 
 int main(int argc, char *argv[])
 {

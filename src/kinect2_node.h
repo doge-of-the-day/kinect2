@@ -5,11 +5,9 @@
 /// SYSTEM
 #include <ros/ros.h>
 #include <sensor_msgs/CameraInfo.h>
-#include <pcl_ros/point_cloud.h>
 #include <sensor_msgs/Image.h>
-#include <sensor_msgs/image_encodings.h>
-#include <sensor_msgs/PointCloud2.h>
-
+#include <ros/service_server.h>
+#include <std_srvs/Empty.h>
 
 /// PROJECT
 #include "kinect2_interface.h"
@@ -21,9 +19,9 @@ public:
     virtual ~Kinect2Node();
 
     bool setup();
-
     int run();
 
+private:
     ros::NodeHandle              nh_private_;
     ros::NodeHandle              nh_;
 
@@ -38,6 +36,9 @@ public:
     ros::Publisher               pub_rgb_registered_;
     ros::Publisher               pub_depth_undistorted_;
     ros::Publisher               pub_pointcloud_;
+
+    ros::ServiceServer           service_sleep_;
+    ros::ServiceServer           service_wakeup_;
 
     std::string                  frame_id_rgb_;
     std::string                  frame_id_ir_;
@@ -58,11 +59,11 @@ public:
     sensor_msgs::Image::Ptr      image_rgb_registered_;
 
 
-
-
-
-private:
     void publish();
+    bool sleep(std_srvs::Empty::Request  &req,
+               std_srvs::Empty::Response &res);
+    bool wakeup(std_srvs::Empty::Request  &req,
+                std_srvs::Empty::Response &res);
 
 };
 

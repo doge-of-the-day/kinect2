@@ -98,7 +98,6 @@ public:
 
     bool start();
     bool stop();
-    bool waitForStart();
 
     Data::Ptr getData();
     bool getCameraParameters(CameraParameters &camera_parameters);
