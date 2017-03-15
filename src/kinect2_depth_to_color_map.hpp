@@ -88,16 +88,16 @@ public:
         assert(pixels.size() == valid_points.size());
 
         cv::Mat rvec, tvec;
-        cv::solvePnP(points,
+        cv::solvePnP(valid_points,
                      pixels,
                      camera_matrix_color_,
-//                     cv::Mat(),
-//                     rvec,
-//                     tvec,
-//                     CV_P3P);
+                     cv::Mat(),
+                     rvec,
+                     tvec,
+                     CV_P3P);
 
-//        std::cout << rvec << std::endl;
-//        std::cout << tvec << std::endl;
+        std::cout << rvec << std::endl;
+        std::cout << tvec << std::endl;
 
     }
 
