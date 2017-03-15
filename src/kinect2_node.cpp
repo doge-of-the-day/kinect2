@@ -45,6 +45,21 @@ bool Kinect2Node::setup()
     kinterface_parameters_.get_color_registered     = nh_private_.param<bool>("publish_color_registered", false);
     kinterface_parameters_.get_depth_rectified      = nh_private_.param<bool>("publish_depth_rectified", false);
 
+    const std::string pipeline_type = nh_private_.param<std::string>("pipeline_type", "CUDA");
+    if(pipeline_type == "GL") {
+        kinterface_parameters_.mode = Kinect2Interface::GL;
+    } else if(pipeline_type == "OCL") {
+        kinterface_parameters_.mode = Kinect2Interface::OCL;
+    } else if(pipeline_type == "CUDA") {
+        kinterface_parameters_.mode = Kinect2Interface::CUDA;
+    } else if(pipeline_type == "KDE_CUDA") {
+        kinterface_parameters_.mode = Kinect2Interface::KDE_CUDA;
+    } else if(pipeline_type == "KDE_OCL") {
+        kinterface_parameters_.mode = Kinect2Interface::KDE_OCL;
+    } else {
+        kinterface_parameters_.mode = Kinect2Interface::CPU;
+    }
+
     if(!kinterface_.setup(kinterface_parameters_)) {
         std::cerr << "[Kinect2Node]: Cannot setup Kinect2Interface!" << std::endl;
         ros::shutdown();
