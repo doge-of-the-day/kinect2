@@ -34,6 +34,7 @@ catkin_package(
 add_executable(kinect2_node
     src/kinect2_node.cpp
     src/kinect2_interface.cpp
+    src/kinect2_depth_to_color_map.hpp
 )
 
 target_link_libraries(kinect2_node

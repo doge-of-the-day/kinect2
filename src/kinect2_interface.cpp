@@ -4,6 +4,9 @@
 /// SYSTEM
 #include <cstring>
 
+/// PROJECT
+#include "kinect2_depth_to_color_map.hpp"
+
 Kinect2Interface::Kinect2Interface() :
     is_running_(false),
     shutdown_(false)
