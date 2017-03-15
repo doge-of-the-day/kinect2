@@ -28,20 +28,33 @@ namespace libfreenect2 {
     using RegistrationPtr = std::shared_ptr<libfreenect2::Registration>;
 }
 
+namespace kinect2 {
 /**
- * @brief The Kinect2Interface class
+ * @brief The Kinect2Interface class wraps the libfreenect device and frames.
+ *        The interface runs a backend thread which gathers the data.
  */
 class Kinect2Interface
 {
 public:
-    enum PipelineType {CPU, GL, OCL, CUDA};
+    /**
+     * @brief The PipelineType enum to choose the execution type.
+     */
+    enum PipelineType {CPU, GL, OCL, CUDA, KDE_CUDA, KDE_OCL};
 
+    /**
+     * @brief The Stamped struct wraps arbitrary data types and makes
+     *        it possible to assign time stamps.
+     */
     template<typename T>
     struct Stamped {
         T data;
         uint32_t stamp;
     };
 
+    /**
+     * @brief The Data struct wraps up all frames which can be received
+     *        from the kinect device.
+     */
     struct Data {
         using Ptr = std::shared_ptr<Data>;
 
@@ -53,6 +66,10 @@ public:
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr points;
     };
 
+    /**
+     * @brief The CameraParameters struct wraps up all camera parameters, as
+     *        well as the serial number, firmware version and other useful information.
+     */
     struct CameraParameters {
         using Ir = libfreenect2::Freenect2Device::IrCameraParams;
         using Color = libfreenect2::Freenect2Device::ColorCameraParams;
@@ -82,62 +99,114 @@ public:
          const std::size_t size_ir          = height_ir * width_ir * bpp;
     };
 
+    /**
+     * @brief The Parameters struct can be used to configure which frames
+     *        should be converted for further usage with ros.
+     *        Additionally, the computation pipeline type can be set.
+     */
     struct Parameters {
         Kinect2Interface::PipelineType mode = CUDA;
-        bool get_rgb                  = false;
+        bool get_color                  = false;
         bool get_ir                   = true;
         bool get_depth                = false;
         bool get_depth_rectified      = false;
-        bool get_rgb_registered       = false;
+        bool get_color_registered       = false;
 
         bool activate_edge_filter     = false;
         bool activate_bilateral_filter= false;
     };
 
+
+    /**
+     * @brief Kinect2Interface constructor.
+     */
     Kinect2Interface();
+    /**
+     * @brief ~Kinect2Interface destructor.
+     */
     virtual ~Kinect2Interface();
 
+    /**
+     * @brief setup configures the interface and sets up all necessary frames and
+     *        the data storage.
+     * @param parameters    - the parameter object
+     * @return
+     */
     bool setup(const Parameters &parameters);
 
+    /**
+     * @brief isRunning returns if the background thread is active.
+     * @return              - activity of the background thread
+     */
     bool isRunning();
+    /**
+     * @brief start the background thread.
+     * @return              - returns success of starting the background thread
+     */
     bool start();
+    /**
+     * @brief stop the background thread
+     * @return              - returns success of ending the background thread
+     */
     bool stop();
 
+    /**
+     * @brief getData returns the currenlty filled up data object.
+     *        This method is blocking for the foreground thread.
+     * @return
+     */
     Data::Ptr getData();
+    /**
+     * @brief getCameraParameters returns the camera parameters by reference.
+     * @param camera_parameters     - reference to return the value
+     * @return                      - returns if the camera parameter object is yet valid
+     */
     bool getCameraParameters(CameraParameters &camera_parameters);
 
 
 private:
-    /// general information about kinect data
+    //// device information
     std::mutex                              camera_parameters_mutex_;
     CameraParameters                        camera_parameters_;
 
+    //// background thread execution
     std::atomic_bool                        is_running_;
     std::atomic_bool                        shutdown_;
+    std::thread                             thread_;
 
+    //// necessary libfreenect2 components
     libfreenect2::Freenect2                 context_;
     libfreenect2::Freenect2DevicePtr        device_;
     libfreenect2::PacketPipeline           *pipeline_;
     libfreenect2::SyncMultiFrameListener   *listener_;
     libfreenect2::FrameMap                  frames_;
 
-    std::string                             serial_;
-
     libfreenect2::FramePtr                  frame_depth_undistorted_;
     libfreenect2::FramePtr                  frame_rgb_registered_;
     libfreenect2::RegistrationPtr           registration_;
 
+    //// data storage to return read depth and rgb data
     std::mutex                              data_mutex_;
     std::condition_variable                 data_available_;
     Data::Ptr                               data_;
 
+    //// parameters with which the interface was configured
     Parameters                              parameters_;
 
-    std::thread                             thread_;
-
+    /**
+     * @brief loop resembles the main loop for the background process.
+     */
     void loop();
+    /**
+     * @brief setupData initializes all buffers.
+     */
     void setupData();
+    /**
+     * @brief doSetup sets up the computation pipeline.
+     * @return  returns the successs of setting up the processing pipeline
+     */
     bool doSetup();
 };
+}
 
 #endif // KINECT2_INTERFACE_H

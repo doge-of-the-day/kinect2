@@ -1,11 +1,14 @@
 /// HEADER
-#include "kinect2_interface.h"
+#include <kinect2/kinect2_interface.h>
 
 /// SYSTEM
 #include <cstring>
+#include <libfreenect2/packet_pipeline.h>
 
 /// PROJECT
-#include "kinect2_depth_to_color_map.hpp"
+#include <kinect2/kinect2_depth_to_color_map.hpp>
+
+using namespace kinect2;
 
 Kinect2Interface::Kinect2Interface() :
     is_running_(false),
@@ -111,7 +114,7 @@ void Kinect2Interface::loop()
                 std::unique_lock<std::mutex> l(data_mutex_);
                 setupData();
                 /// BUFFER THE DATA IN THE BUNDLE OBJECT
-                if(parameters_.get_rgb) {
+                if(parameters_.get_color) {
                     std::memcpy(data_->rgb.data.data, rgb->data, camera_parameters_.size_rgb);
                     data_->rgb.stamp = rgb->timestamp;
                 }
@@ -127,7 +130,7 @@ void Kinect2Interface::loop()
                     std::memcpy(data_->depth_rectified.data.data, frame_depth_undistorted_->data, camera_parameters_.size_ir);
                     data_->depth_rectified.stamp = frame_depth_undistorted_->timestamp;
                 }
-                if(parameters_.get_rgb_registered) {
+                if(parameters_.get_color_registered) {
                     std::memcpy(data_->rgb_registered.data.data, frame_rgb_registered_->data, camera_parameters_.size_ir);
                     data_->rgb_registered.stamp = frame_rgb_registered_->timestamp;
                 }
@@ -145,29 +148,6 @@ void Kinect2Interface::loop()
                 }
             }
 
-            const float *depth_data = (float*)depth->data;
-            Kinect2DepthToColorMap kdtcm (camera_parameters_);
-            cv::Mat vis(data_->rgb.data.rows, data_->rgb.data.cols, CV_8UC3, cv::Scalar());
-            for(std::size_t row = 0 ; row < camera_parameters_.height_ir ; ++row) {
-                for(std::size_t col = 0 ; col < camera_parameters_.width_ir ; ++col) {
-                    cv::Vec2f pixel;
-                    if(kdtcm.getRGBCoordinates(row, col, depth_data[row * camera_parameters_.width_ir + col],
-                                               pixel)) {
-                        cv::Vec4b &pixel_rgb = data_->rgb.data.at<cv::Vec4b>(pixel[1], pixel[0]);
-                        cv::Vec3b &pixel_vis = vis.at<cv::Vec3b>(pixel[1], camera_parameters_.width_rgb - pixel[0] - 1);
-
-                        pixel_vis[0] = pixel_rgb[0];
-                        pixel_vis[1] = pixel_rgb[1];
-                        pixel_vis[2] = pixel_rgb[2];
-                    }
-                }
-            }
-            cv::Mat cv_depth(depth->height, depth->width, CV_32FC1, (float*) depth->data);
-            kdtcm.getTransformation(cv_points, cv_depth);
-
-            cv::imshow("vis",vis);
-            cv::waitKey(19);
-
             data_available_.notify_one();
             listener_->release(frames_);
         }
@@ -184,7 +164,7 @@ void Kinect2Interface::setupData()
 {
     data_.reset(new Data);
 
-    if(parameters_.get_rgb)
+    if(parameters_.get_color)
         data_->rgb.data                = cv::Mat(camera_parameters_.height_rgb,
                                                  camera_parameters_.width_rgb,
                                                  CV_8UC4, cv::Scalar());
@@ -196,7 +176,7 @@ void Kinect2Interface::setupData()
         data_->depth.data              = cv::Mat(camera_parameters_.height_ir,
                                                  camera_parameters_.width_ir,
                                                  CV_32FC1, cv::Scalar());
-    if(parameters_.get_rgb_registered)
+    if(parameters_.get_color_registered)
         data_->rgb_registered.data     = cv::Mat(camera_parameters_.height_ir,
                                                  camera_parameters_.width_ir,
                                                  CV_8UC4, cv::Scalar());
@@ -244,13 +224,29 @@ bool Kinect2Interface::doSetup()
         return false;
 #endif
         break;
+    case KDE_CUDA:
+#ifdef LIBFREENECT2_WITH_CUDA_SUPPORT
+        pipeline_ = (new libfreenect2::CudaKdePacketPipeline());
+#else
+        std::cerr << "[Kinect2Interface]: CUDA is not supported!" << std::endl;
+        return false;
+#endif
+        break;
+    case KDE_OCL:
+#ifdef LIBFREENECT2_WITH_OPENCL_SUPPORT
+        pipeline_ = (new libfreenect2::OpenCLKdePacketPipeline());
+#else
+        std::cerr << "[Kinect2Interface]: OCL is not supported!" << std::endl;
+        return false;
+#endif
+        break;
     default:
         std::cerr << "[Kinect2Interface]: Unknown processing mode, using 'CPU'!" << std::endl;
         pipeline_ = (new libfreenect2::CpuPacketPipeline());
         break;
     }
 
-    serial_ = context_.getDefaultDeviceSerialNumber();
+    camera_parameters_.serial = context_.getDefaultDeviceSerialNumber();
 
     /// setup the listeners
     listener_ = (new libfreenect2::SyncMultiFrameListener(libfreenect2::Frame::Ir |
@@ -265,7 +261,7 @@ bool Kinect2Interface::doSetup()
                                                          camera_parameters_.bpp));
 
 
-    device_.reset(context_.openDevice(serial_, pipeline_));
+    device_.reset(context_.openDevice(camera_parameters_.serial, pipeline_));
 
     if(!device_) {
         std::cerr << "[Kinect2Interface]: Cannot open device!" << std::endl;

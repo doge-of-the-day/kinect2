@@ -1,5 +1,5 @@
 /// HEADER
-#include "kinect2_node.h"
+#include <kinect2/kinect2_node.h>
 
 /// SYSTEM
 #include <sensor_msgs/distortion_models.h>
@@ -7,6 +7,8 @@
 #include <pcl_ros/point_cloud.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <functional>
+
+using namespace kinect2;
 
 Kinect2Node::Kinect2Node() :
     nh_private_("~")
@@ -20,28 +22,27 @@ Kinect2Node::~Kinect2Node()
 
 bool Kinect2Node::setup()
 {
-    const std::string topic_rgb               = nh_private_.param<std::string>("topic_rgb",                 "/kinect2/image_color");
-    const std::string topic_rgb_info          = nh_private_.param<std::string>("topic_rgb_info",            "/kinect2/camera_info/image_color");
+    const std::string topic_color             = nh_private_.param<std::string>("topic_color",               "/kinect2/image_color");
+    const std::string topic_color_info        = nh_private_.param<std::string>("topic_color_info",          "/kinect2/image_color/camera_info");
     const std::string topic_depth             = nh_private_.param<std::string>("topic_depth",               "/kinect2/depth");
-    const std::string topic_depth_info        = nh_private_.param<std::string>("topic_depth_info",          "/kinect2/camera_info/depth");
+    const std::string topic_depth_info        = nh_private_.param<std::string>("topic_depth_info",          "/kinect2/depth/camera_info");
     const std::string topic_ir                = nh_private_.param<std::string>("topic_ir",                  "/kinect2/image_ir");
-    const std::string topic_ir_info           = nh_private_.param<std::string>("topic_ir_info",             "/kinect2/camera_info/image_ir");
-    const std::string topic_rgb_registered    = nh_private_.param<std::string>("topic_rgb_registered",      "/kinect2/rgb_registered");
+    const std::string topic_ir_info           = nh_private_.param<std::string>("topic_ir_info",             "/kinect2/image_ir/camera_info");
+    const std::string topic_color_registered  = nh_private_.param<std::string>("topic_colo_registered",     "/kinect2/color_registered");
     const std::string topic_depth_rectified   = nh_private_.param<std::string>("topic_depth_undistorted",   "/kinect2/depth_rectified");
     const std::string topic_pointcloud        = nh_private_.param<std::string>("topic_rgb",                 "/kinect2/points");
     const std::string service_name_wakeup     = nh_private_.param<std::string>("service_name_wakeup",       "/kinect2/wakeup");
     const std::string service_name_sleep      = nh_private_.param<std::string>("service_name_sleep",        "/kinect2/sleep");
 
     pub_rate_preferred_                       = nh_private_.param<double>("preferred_publication_rate",     -1.0);
-    frame_id_rgb_                             = nh_private_.param<std::string>("frame_id_rgb",              "kinect2_rgb_optical_frame");
+    frame_id_rgb_                             = nh_private_.param<std::string>("frame_id_color",            "kinect2_color_optical_frame");
     frame_id_ir_                              = nh_private_.param<std::string>("frame_id_ir",               "kinect2_depth_optical_frame");
-    frame_id_                                 = nh_private_.param<std::string>("frame_id",                  "kinect2_frame");
 
-    kinterface_parameters_.get_rgb                  = nh_private_.param<bool>("publish_rgb", true);
-    kinterface_parameters_.get_ir                   = nh_private_.param<bool>("publish_ir", true);
+    kinterface_parameters_.get_color                = nh_private_.param<bool>("publish_color", false);
+    kinterface_parameters_.get_ir                   = nh_private_.param<bool>("publish_ir", false);
     kinterface_parameters_.get_depth                = nh_private_.param<bool>("publish_depth", false);
 
-    kinterface_parameters_.get_rgb_registered       = nh_private_.param<bool>("publish_rgb_registered", false);
+    kinterface_parameters_.get_color_registered     = nh_private_.param<bool>("publish_color_registered", false);
     kinterface_parameters_.get_depth_rectified      = nh_private_.param<bool>("publish_depth_rectified", false);
 
     if(!kinterface_.setup(kinterface_parameters_)) {
@@ -49,9 +50,9 @@ bool Kinect2Node::setup()
         ros::shutdown();
     }
 
-    if(kinterface_parameters_.get_rgb) {
-        pub_rgb_ = nh_.advertise<sensor_msgs::Image>(topic_rgb, 1);
-        pub_rgb_info_ = nh_.advertise<sensor_msgs::CameraInfo>(topic_rgb_info, 1);
+    if(kinterface_parameters_.get_color) {
+        pub_rgb_ = nh_.advertise<sensor_msgs::Image>(topic_color, 1);
+        pub_rgb_info_ = nh_.advertise<sensor_msgs::CameraInfo>(topic_color_info, 1);
     }
     if(kinterface_parameters_.get_depth) {
         pub_depth_ = nh_.advertise<sensor_msgs::Image>(topic_depth, 1);
@@ -61,8 +62,8 @@ bool Kinect2Node::setup()
         pub_ir_ = nh_.advertise<sensor_msgs::Image>(topic_ir, 1);
         pub_ir_info_ = nh_.advertise<sensor_msgs::CameraInfo>(topic_ir_info, 1);
     }
-    if(kinterface_parameters_.get_rgb_registered) {
-        pub_rgb_registered_ = nh_.advertise<sensor_msgs::Image>(topic_rgb_registered, 1);
+    if(kinterface_parameters_.get_color_registered) {
+        pub_rgb_registered_ = nh_.advertise<sensor_msgs::Image>(topic_color_registered, 1);
     }
     if(kinterface_parameters_.get_depth_rectified) {
         pub_depth_undistorted_ = nh_.advertise<sensor_msgs::Image>(topic_depth_rectified, 1);
@@ -248,7 +249,7 @@ void Kinect2Node::publish()
 
     Kinect2Interface::Data::Ptr data = kinterface_.getData();
     if(data) {
-        if(kinterface_parameters_.get_rgb) {
+        if(kinterface_parameters_.get_color) {
             convertRGB(data->rgb, frame_id_rgb_, image_rgb_);
             updateRGBInfo();
 
@@ -272,7 +273,7 @@ void Kinect2Node::publish()
             convertFloat(data->depth_rectified, frame_id_ir_, image_depth_rectified_);
             pub_depth_undistorted_.publish(image_depth_rectified_);
         }
-        if(kinterface_parameters_.get_rgb_registered) {
+        if(kinterface_parameters_.get_color_registered) {
             convertRGB(data->rgb_registered, frame_id_ir_, image_rgb_registered_);
             pub_rgb_registered_.publish(image_rgb_registered_);
         }

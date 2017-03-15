@@ -8,7 +8,6 @@
 #include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/Image.h>
 #include <std_srvs/Empty.h>
-#include <tf/transform_broadcaster.h>
 
 /// PROJECT
 #include "kinect2_interface.h"
@@ -17,6 +16,7 @@
  * @brief The Kinect2Node class wraps the kinect2 interface class and provides topics
  *        and service to either retrieve data or stop / start the driver.
  */
+namespace kinect2 {
 class Kinect2Node
 {
 public:
@@ -64,7 +64,6 @@ private:
     //// tf
     std::string                  frame_id_rgb_;
     std::string                  frame_id_ir_;
-    std::string                  frame_id_;
 
     //// kinect2 interface
     Kinect2Interface::CameraParameters::Ptr kinterface_camera_paramters_;
@@ -104,5 +103,5 @@ private:
     bool wakeup(std_srvs::Empty::Request  &req, std_srvs::Empty::Response &res);
 
 };
-
+}
 #endif // KINECT2_NODE_H

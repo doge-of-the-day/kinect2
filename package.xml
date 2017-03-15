@@ -1,10 +1,11 @@
 <?xml version="1.0"?>
 <package>
   <name>kinect2</name>
-  <version>0.0.1</version>
+  <version>0.0.2</version>
   <description>
-    The kinect2 package contains a simpliefied version of the kinect driver for ros.
-    It requires fewer computation power and only provides all data in raw resolutions.
+    The kinect2 package contains a simple kinect2 driver for ros.
+    This driver package uses only the device internal parameters to generate 
+    colored depth clouds and to return rectified and registered data.
   </description>
 
   <maintainer email="richard.hanten@uni-tuebingen.de">hanten</maintainer>
@@ -17,13 +18,11 @@
   <build_depend>sensor_msgs</build_depend>
   <build_depend>std_srvs</build_depend>
   <build_depend>pcl_ros</build_depend>
-  <build_depend>tf</build_depend>
 
   <run_depend>roscpp</run_depend>
   <run_depend>std_srvs</run_depend>
   <run_depend>sensor_msgs</run_depend>
   <run_depend>pcl_ros</run_depend>
-  <run_depend>tf</run_depend>
 
   <export>
   </export>

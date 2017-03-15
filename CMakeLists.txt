@@ -2,14 +2,13 @@ cmake_minimum_required(VERSION 2.8.3)
 project(kinect2)
 
 add_definitions(-std=c++11)
-#add_definitions(-Ofast)
+add_definitions(-Ofast)
 
 find_package(catkin REQUIRED
     roscpp
     sensor_msgs
     std_srvs
     pcl_ros
-    tf
 )
 
 find_package(freenect2 REQUIRED)
@@ -21,10 +20,11 @@ include_directories(
     ${freenect2_INCLUDE_DIRS}
     ${PCL_INCLUDE_DIRS}
     ${OpenCV_INCLUDE_DIRS}
+    include
 )
 
 catkin_package(
-#  INCLUDE_DIRS include
+  INCLUDE_DIRS include
 #  LIBRARIES kinect2
 #  CATKIN_DEPENDS other_catkin_pkg
 #  DEPENDS system_lib
@@ -34,7 +34,10 @@ catkin_package(
 add_executable(kinect2_node
     src/kinect2_node.cpp
     src/kinect2_interface.cpp
-    src/kinect2_depth_to_color_map.hpp
+
+    include/kinect2/kinect2_node.h
+    include/kinect2/kinect2_interface.h
+    include/kinect2/kinect2_depth_to_color_map.hpp
 )
 
 target_link_libraries(kinect2_node

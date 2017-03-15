@@ -1,13 +1,20 @@
 #ifndef KINECT2_UNDISTORTION_MAPS_HPP
 #define KINECT2_UNDISTORTION_MAPS_HPP
 
-#include "kinect2_interface.h"
 #include <opencv2/opencv.hpp>
+#include "kinect2_interface.h"
 
-
-
+namespace kinect2 {
+/**
+ * @brief The Kinect2DepthToColorMap class can be used to map 3D points / depth values
+ *        and indices to the full-hd rgb image.
+ */
 class Kinect2DepthToColorMap {
 public:
+    /**
+     * @brief Kinect2DepthToColorMap constructor.
+     * @param params    - the camera parameters from the kinect device
+     */
     Kinect2DepthToColorMap(Kinect2Interface::CameraParameters &params) :
         map_x_(params.height_ir, params.width_ir, CV_32FC1, cv::Scalar()),
         map_y_(params.height_ir, params.width_ir, CV_32FC1, cv::Scalar()),
@@ -33,6 +40,16 @@ public:
         camera_matrix_color_.at<float>(2,1) = params.color.cy;
     }
 
+    /**
+     * @brief getRGBCoordinates return column and row indices defined within the
+     *        full-hd rgb frame, given row and column in the depth frame.
+     * @param row               - the row
+     * @param col               - the column
+     * @param z                 - the depth
+     * @param pixel             - the resulting pixel coordinates
+     * @param flip_horizontal   - tell the conversion to flip horizontally
+     * @return
+     */
     inline bool getRGBCoordinates(const std::size_t row,
                                   const std::size_t col,
                                   const float z,
@@ -64,41 +81,6 @@ public:
         pixel[0] = flip_horizontal ? camera_parameters_.width_rgb - cx - 1 : cx;
         pixel[1] = cy;
         return true;
-    }
-
-    inline bool getTransformation(const std::vector<cv::Point3f> &points,
-                                  const cv::Mat &depth)
-    {
-        /// reconstruct the 2D rgb image pixels
-        std::vector<cv::Point2f> pixels;
-        std::vector<cv::Point3f> valid_points;
-        pixels.reserve(points.size());
-        const float *depth_ptr = depth.ptr<float>();
-        for(std::size_t i = 0 ; i < camera_parameters_.height_ir ; ++i) {
-            for(std::size_t j = 0 ; j < camera_parameters_.width_ir ; ++j) {
-                const std::size_t pos = i * camera_parameters_.width_ir + j;
-                cv::Vec2f pixel;
-                if(getRGBCoordinates(i,j,depth_ptr[pos], pixel)) {
-                    pixels.emplace_back(pixel);
-                    valid_points.emplace_back(points[pos]);
-                }
-            }
-        }
-
-        assert(pixels.size() == valid_points.size());
-
-        cv::Mat rvec, tvec;
-        cv::solvePnPRansac(valid_points,
-                     pixels,
-                     camera_matrix_color_,
-                     cv::Mat(),
-                     rvec,
-                     tvec,
-                     false, 2000, 0.5, 1000);
-
-        std::cout << rvec << std::endl;
-        std::cout << tvec << std::endl;
-
     }
 
 private:
@@ -157,6 +139,7 @@ private:
               camera_parameters_.color.cy;
     }
 };
+}
 
 
 
