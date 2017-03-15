@@ -5,6 +5,7 @@
 #include <opencv2/opencv.hpp>
 
 
+
 class Kinect2DepthToColorMap {
 public:
     Kinect2DepthToColorMap(Kinect2Interface::CameraParameters &params) :
@@ -28,31 +29,70 @@ public:
         camera_matrix_color_.at<float>(2,1) = params.color.cy;
     }
 
-    void getTransformation(const cv::Mat &points3d)
+
+    bool getRGBCoordinates(const std::size_t row,
+                           const std::size_t col,
+                           const float z,
+                           cv::Vec2i &pixel)
     {
-//        cv::Mat camera_matrix;
-//        cv::calibrateCamera(points3d,
-//                            map_depth_to_color_,
-//                            cv::Size(camera_parameters_.width_rgb,
-//                                     camera_parameters_.height_rgb,
-//                                     camera_matrix,
-//                                     dist_co))
+        cv::Vec2f *map_ptr = map_depth_to_color_.ptr<cv::Vec2f>();
+        cv::Vec2f &mapped = map_ptr[row * camera_parameters_.width_ir + col];
+        const int cx = std::floor((mapped[0] + camera_parameters_.color.shift_m / z) *
+                                   camera_parameters_.color.fx +
+                                   camera_parameters_.color.cx +
+                                   0.5f);
+        const int cy = std::floor(mapped[1] + 0.5f);
+        const int c_off = cx + cy * camera_parameters_.width_rgb;
+        if(c_off < 0 || c_off >= camera_parameters_.width_rgb * camera_parameters_.height_rgb)
+            return false;
 
-        cv::Mat rvec;
-        cv::Mat tvec;
-        cv::solvePnP(points3d,
-                     map_depth_to_color_,
-                     camera_matrix_color_,
-                     cv::Mat(),
-                     rvec,
-                     tvec,
-                     false,
-                     CV_P3P);
-
-        std::cout << rvec << std::endl;
-        std::cout << tvec << std::endl;
-
+        pixel[0] = cx;
+        pixel[1] = cy;
+        return true;
     }
+
+
+
+//    void getTransformation(const cv::Mat &points3d)
+//    {
+
+//        cv::Mat offsets(camera_parameters_.height_ir,
+//                        camera_parameters_.width_ir,
+//                        CV_32SC1,
+//                        cv::Scalar());
+
+//        int *offsets_ptr = offsets.ptr<int>();
+//        for(std::size_t i = 0 ; i < camera_parameters_.height_ir ; ++i) {
+//            for(std::size_t j = 0 ; j < camera_parameters_.width_ir ; ++j) {
+
+//            }
+//        }
+
+
+
+////        cv::Mat camera_matrix;
+////        cv::calibrateCamera(points3d,
+////                            map_depth_to_color_,
+////                            cv::Size(camera_parameters_.width_rgb,
+////                                     camera_parameters_.height_rgb,
+////                                     camera_matrix,
+////                                     dist_co))
+
+//        cv::Mat rvec;
+//        cv::Mat tvec;
+//        cv::solvePnP(points3d,
+//                     map_depth_to_color_,
+//                     camera_matrix_color_,
+//                     cv::Mat(),
+//                     rvec,
+//                     tvec,
+//                     false,
+//                     CV_P3P);
+
+//        std::cout << rvec << std::endl;
+//        std::cout << tvec << std::endl;
+
+//    }
 
 
 private:
@@ -60,6 +100,7 @@ private:
     const float color_q_ = 0.002199;
 
     cv::Mat                            map_depth_to_color_;
+
     cv::Mat                            camera_matrix_color_;
     Kinect2Interface::CameraParameters camera_parameters_;
 

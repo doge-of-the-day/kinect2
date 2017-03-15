@@ -129,11 +129,20 @@ void Kinect2Interface::loop()
                     data_->rgb_registered.stamp = frame_rgb_registered_->timestamp;
                 }
 
+                Kinect2DepthToColorMap m(camera_parameters_);
+                std::vector<cv::Vec2i> cp;
+                const float *depth_data = (float*)depth->data;
                 pcl::PointXYZRGB *points_ptr = data_->points->points.data();
                 for(std::size_t i = 0 ; i < camera_parameters_.height_ir ; ++i) {
                     for(std::size_t j = 0 ; j < camera_parameters_.width_ir ; ++j) {
                         pcl::PointXYZRGB &p = points_ptr[i * camera_parameters_.width_ir + j];
                         registration_->getPointXYZRGB(frame_depth_undistorted_.get(), frame_rgb_registered_.get(), i, j, p.x, p.y, p.z, p.rgb);
+
+                        cv::Vec2i cc;
+                        if(m.getRGBCoordinates(i, j, depth_data[i * camera_parameters_.width_ir + j], cc))
+                            cp.emplace_back(cc);
+
+
                         p.x = -p.x;
                     }
                 }
