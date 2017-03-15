@@ -9,17 +9,21 @@
 class Kinect2DepthToColorMap {
 public:
     Kinect2DepthToColorMap(Kinect2Interface::CameraParameters &params) :
-        map_depth_to_color_(params.height_ir * params.width_ir, 1, CV_32FC2, cv::Scalar()),
+        map_x_(params.height_ir, params.width_ir, CV_32FC1, cv::Scalar()),
+        map_y_(params.height_ir, params.width_ir, CV_32FC1, cv::Scalar()),
         camera_matrix_color_(cv::Mat::eye(cv::Size(3,3), CV_32FC1)),
         camera_parameters_(params)
     {
-        cv::Vec2f *map_ptr = map_depth_to_color_.ptr<cv::Vec2f>();
+        float * map_x_ptr = map_x_.ptr<float>();
+        float * map_y_ptr = map_y_.ptr<float>();
 
         for(std::size_t i = 0 ; i < params.height_ir ; ++i) {
             for(std::size_t j = 0 ; j < params.width_ir ; ++j) {
-                cv::Vec2i d(j,i);
-                cv::Vec2f &c = map_ptr[i * params.width_ir + j];
-                depth_to_color(d, c);
+                const std::size_t pos = i * params.width_ir +j;
+                depth_to_color(i,
+                               j,
+                               map_x_ptr[pos],
+                               map_y_ptr[pos]);
             }
         }
 
@@ -35,16 +39,28 @@ public:
                            const float z,
                            cv::Vec2i &pixel)
     {
-        cv::Vec2f *map_ptr = map_depth_to_color_.ptr<cv::Vec2f>();
-        cv::Vec2f &mapped = map_ptr[row * camera_parameters_.width_ir + col];
-        const int cx = std::floor((mapped[0] + camera_parameters_.color.shift_m / z) *
-                                   camera_parameters_.color.fx +
-                                   camera_parameters_.color.cx +
-                                   0.5f);
-        const int cy = std::floor(mapped[1] + 0.5f);
-        const int c_off = cx + cy * camera_parameters_.width_rgb;
-        if(c_off < 0 || c_off >= camera_parameters_.width_rgb * camera_parameters_.height_rgb)
+        assert(row < camera_parameters_.height_ir);
+        assert(col < camera_parameters_.width_ir);
+
+
+        const float *map_x_ptr = map_x_.ptr<float>();
+        const float *map_y_ptr = map_y_.ptr<float>();
+
+        const std::size_t pos = row * camera_parameters_.width_ir + col;
+
+        const float mx = map_x_ptr[pos];
+        const float my = map_y_ptr[pos];
+        const int   cx = std::floor((mx + (camera_parameters_.color.shift_m / z))
+                                    * camera_parameters_.color.fx
+                                    + camera_parameters_.color.cx
+                                    + 0.5f);
+        const int   cy = std::floor(my + 0.5f);
+        const int   c_off = cx + cy * camera_parameters_.width_rgb;
+
+        if(c_off < 0 ||
+                c_off >= camera_parameters_.width_rgb * camera_parameters_.height_rgb) {
             return false;
+        }
 
         pixel[0] = cx;
         pixel[1] = cy;
@@ -99,15 +115,19 @@ private:
     const float depth_q_ = 0.01;
     const float color_q_ = 0.002199;
 
-    cv::Mat                            map_depth_to_color_;
+    cv::Mat     map_x_;
+    cv::Mat     map_y_;
 
     cv::Mat                            camera_matrix_color_;
     Kinect2Interface::CameraParameters camera_parameters_;
 
-    inline void depth_to_color(const cv::Vec2i &d, cv::Vec2f &c) const
+    inline void depth_to_color(const int x,
+                               const int y,
+                               float    &mx,
+                               float    &my) const
     {
-        double mx = d[0] - camera_parameters_.ir.cx * depth_q_;
-        double my = d[1] - camera_parameters_.ir.cy * depth_q_;
+        mx = (x - camera_parameters_.ir.cx) * depth_q_;
+        my = (y - camera_parameters_.ir.cy) * depth_q_;
 
         double wx =
                 (mx * mx * mx * camera_parameters_.color.mx_x3y0) +
@@ -133,14 +153,11 @@ private:
                 (my * camera_parameters_.color.my_x0y1) +
                 (camera_parameters_.color.my_x0y0);
 
-        c[0] = (wx / (camera_parameters_.color.fx * color_q_)) -
-                (camera_parameters_.color.shift_m / camera_parameters_.color.shift_d);
-        c[1] = (wy / color_q_) +
-                camera_parameters_.color.cy;
+        mx = (wx / (camera_parameters_.color.fx * color_q_)) -
+             (camera_parameters_.color.shift_m / camera_parameters_.color.shift_d);
+        my = (wy / color_q_) +
+              camera_parameters_.color.cy;
     }
-
-
-
 };
 
 

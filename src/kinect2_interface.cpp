@@ -93,6 +93,9 @@ void Kinect2Interface::loop()
     registration_.reset(new libfreenect2::Registration(camera_parameters_.ir,
                                                        camera_parameters_.color));
     is_running_ = true;
+    bool aquired_transform = false;
+    std::vector<cv::Vec2i> pixels;
+
     while(!shutdown_) {
         if(!listener_->waitForNewFrame(frames_, 1000)) {
             std::cerr << "[Kinect2Interface]: Listener Timeout!" << std::endl;
@@ -147,6 +150,21 @@ void Kinect2Interface::loop()
                     }
                 }
             }
+            if(!aquired_transform) {
+                const float *depth_data = (float*)depth->data;
+                Kinect2DepthToColorMap kdtcm (camera_parameters_);
+                for(std::size_t row = 0 ; row < camera_parameters_.height_ir ; ++row) {
+                    for(std::size_t col = 0 ; col < camera_parameters_.width_ir ; ++col) {
+                        cv::Vec2i pixel;
+                        if(kdtcm.getRGBCoordinates(row, col, depth_data[row * camera_parameters_.width_ir + col],
+                                pixel)) {
+                            pixels.emplace_back(pixel);
+                        }
+                    }
+                }
+                aquired_transform = true;
+            }
+
             data_available_.notify_one();
             listener_->release(frames_);
         }
