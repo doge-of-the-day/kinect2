@@ -74,8 +74,8 @@ public:
          }
 
          const std::size_t bpp              = 4;
-         const std::size_t width_rgb        = 1080;
-         const std::size_t height_rgb       = 1920;
+         const std::size_t width_rgb        = 1920;
+         const std::size_t height_rgb       = 1080;
          const std::size_t size_rgb         = bpp * height_rgb * width_rgb;
          const std::size_t width_ir         = 512;
          const std::size_t height_ir        = 424;

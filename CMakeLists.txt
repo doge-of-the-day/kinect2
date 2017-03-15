@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(kinect2)
 
 add_definitions(-std=c++11)
-add_definitions(-Ofast)
+#add_definitions(-Ofast)
 
 find_package(catkin REQUIRED
     roscpp

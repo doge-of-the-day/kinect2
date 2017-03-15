@@ -37,7 +37,7 @@ bool Kinect2Node::setup()
     frame_id_ir_                              = nh_private_.param<std::string>("frame_id_ir",               "kinect2_depth_optical_frame");
     frame_id_                                 = nh_private_.param<std::string>("frame_id",                  "kinect2_frame");
 
-    kinterface_parameters_.get_rgb                  = nh_private_.param<bool>("publish_rgb", false);
+    kinterface_parameters_.get_rgb                  = nh_private_.param<bool>("publish_rgb", true);
     kinterface_parameters_.get_ir                   = nh_private_.param<bool>("publish_ir", true);
     kinterface_parameters_.get_depth                = nh_private_.param<bool>("publish_depth", false);
 
