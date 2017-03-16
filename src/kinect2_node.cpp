@@ -88,7 +88,7 @@ bool Kinect2Node::setup()
     service_sleep_  = nh_.advertiseService(service_name_sleep, &Kinect2Node::sleep, this);
     service_wakeup_ = nh_.advertiseService(service_name_wakeup, &Kinect2Node::wakeup, this);
 
-    kinterface_.start();
+    return kinterface_.start();
 }
 
 int Kinect2Node::run()
@@ -115,6 +115,7 @@ int Kinect2Node::run()
     }
     kinterface_.stop();
     ros::shutdown();
+    return 0;
 }
 
 void Kinect2Node::publish()

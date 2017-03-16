@@ -60,6 +60,7 @@ bool Kinect2Interface::stop()
     shutdown_ = true;
     if(thread_.joinable())
         thread_.join();
+    return true;
 }
 
 Kinect2Interface::Data::Ptr Kinect2Interface::getData()
@@ -96,8 +97,6 @@ void Kinect2Interface::loop()
     registration_.reset(new libfreenect2::Registration(camera_parameters_.ir,
                                                        camera_parameters_.color));
     is_running_ = true;
-    bool aquired_transform = false;
-    std::vector<cv::Point3f> cv_points;
 
     while(!shutdown_) {
         if(!listener_->waitForNewFrame(frames_, 1000)) {
@@ -135,14 +134,11 @@ void Kinect2Interface::loop()
                     data_->rgb_registered.stamp = frame_rgb_registered_->timestamp;
                 }
 
-                cv_points.clear();
                 pcl::PointXYZRGB *points_ptr = data_->points->points.data();
                 for(std::size_t i = 0 ; i < camera_parameters_.height_ir ; ++i) {
                     for(std::size_t j = 0 ; j < camera_parameters_.width_ir ; ++j) {
                         pcl::PointXYZRGB &p = points_ptr[i * camera_parameters_.width_ir + j];
                         registration_->getPointXYZRGB(frame_depth_undistorted_.get(), frame_rgb_registered_.get(), i, j, p.x, p.y, p.z, p.rgb);
-                        cv_points.push_back(cv::Point3f(p.x, p.y, p.z));
-
                         p.x = -p.x;
                     }
                 }

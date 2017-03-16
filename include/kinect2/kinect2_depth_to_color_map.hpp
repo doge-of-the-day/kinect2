@@ -59,7 +59,7 @@ public:
         assert(row < camera_parameters_.height_ir);
         assert(col < camera_parameters_.width_ir);
 
-
+        const int size_rgb = camera_parameters_.width_rgb * camera_parameters_.height_rgb;
         const float *map_x_ptr = map_x_.ptr<float>();
         const float *map_y_ptr = map_y_.ptr<float>();
 
@@ -74,7 +74,7 @@ public:
         const int   c_off = cx + cy * camera_parameters_.width_rgb;
 
         if(c_off < 0 ||
-                c_off >= camera_parameters_.width_rgb * camera_parameters_.height_rgb) {
+                c_off >= size_rgb) {
             return false;
         }
 
