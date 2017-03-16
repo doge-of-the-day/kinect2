@@ -28,6 +28,7 @@ bool Kinect2Node::setup()
     const std::string topic_depth_info        = nh_private_.param<std::string>("topic_depth_info",          "/kinect2/depth/camera_info");
     const std::string topic_ir                = nh_private_.param<std::string>("topic_ir",                  "/kinect2/image_ir");
     const std::string topic_ir_info           = nh_private_.param<std::string>("topic_ir_info",             "/kinect2/image_ir/camera_info");
+    const std::string topic_kinect2_info      = nh_private_.param<std::string>("topic_kinect2_info",        "/kinect2/camera_info");
     const std::string topic_color_registered  = nh_private_.param<std::string>("topic_colo_registered",     "/kinect2/color_registered");
     const std::string topic_depth_rectified   = nh_private_.param<std::string>("topic_depth_undistorted",   "/kinect2/depth_rectified");
     const std::string topic_pointcloud        = nh_private_.param<std::string>("topic_rgb",                 "/kinect2/points");
@@ -40,7 +41,7 @@ bool Kinect2Node::setup()
 
     kinterface_parameters_.get_color                = nh_private_.param<bool>("publish_color", false);
     kinterface_parameters_.get_ir                   = nh_private_.param<bool>("publish_ir", false);
-    kinterface_parameters_.get_depth                = nh_private_.param<bool>("publish_depth", false);
+    kinterface_parameters_.get_depth                 = nh_private_.param<bool>("publish_depth", false);
 
     kinterface_parameters_.get_color_registered     = nh_private_.param<bool>("publish_color_registered", false);
     kinterface_parameters_.get_depth_rectified      = nh_private_.param<bool>("publish_depth_rectified", false);
@@ -85,6 +86,7 @@ bool Kinect2Node::setup()
     }
 
     pub_pointcloud_ = nh_.advertise<pcl::PointCloud<pcl::PointXYZRGB>>(topic_pointcloud, 1);
+    pub_kinect2_info_ = nh_.advertise<Kinect2Info>(topic_kinect2_info, 1);
     service_sleep_  = nh_.advertiseService(service_name_sleep, &Kinect2Node::sleep, this);
     service_wakeup_ = nh_.advertiseService(service_name_wakeup, &Kinect2Node::wakeup, this);
 
@@ -219,6 +221,7 @@ void Kinect2Node::publish()
             data->points->header.frame_id = frame_id_ir_;
             pub_pointcloud_.publish(data->points);
         }
+        pub_kinect2_info_.publish(kinect2_info_);
     }
 }
 
@@ -299,8 +302,10 @@ void Kinect2Node::updateCameraInfo()
         kinect2_info_->P_ir                = camera_info_ir_->P;
     }
 
-    camera_info_rgb_->header.stamp = ros::Time::now();
-    camera_info_ir_->header.stamp  = ros::Time::now();
+    ros::Time stamp = ros::Time::now();
+    camera_info_rgb_->header.stamp = stamp;
+    camera_info_ir_->header.stamp  = stamp;
+    kinect2_info_->header.stamp    = stamp;
 }
 
 

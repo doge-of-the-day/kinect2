@@ -54,6 +54,7 @@ private:
     ros::Publisher               pub_depth_info_;
     ros::Publisher               pub_ir_;
     ros::Publisher               pub_ir_info_;
+    ros::Publisher               pub_kinect2_info_;
     ros::Publisher               pub_rgb_registered_;
     ros::Publisher               pub_depth_undistorted_;
     ros::Publisher               pub_pointcloud_;
