@@ -136,7 +136,7 @@ void Kinect2Node::publish()
 
             image->height       = rows;
             image->width        = cols;
-            image->encoding     = sensor_msgs::image_encodings::RGB8;
+            image->encoding     = sensor_msgs::image_encodings::BGR8;
             image->is_bigendian = false;
             image->step         = cols * channels * bbc;
             image->data.resize(channels * rows * cols);

@@ -46,7 +46,7 @@ catkin_package(
   DEPENDS PCL OpenCV freenect2
 )
 
-add_executable(${CMAKE_PROJECT_NAME}_node
+add_executable(${PROJECT_NAME}_node
     src/kinect2_node.cpp
     src/kinect2_interface.cpp
 
@@ -55,13 +55,13 @@ add_executable(${CMAKE_PROJECT_NAME}_node
     include/kinect2/kinect2_depth_to_color_map.hpp
 )
 
-target_link_libraries(${CMAKE_PROJECT_NAME}_node
+target_link_libraries(${PROJECT_NAME}_node
     ${catkin_LIBRARIES}
     ${freenect2_LIBRARY}
     ${PCL_LIBRARIES}
     ${OpenCV_LIBRARIES}
 )
 
-add_dependencies(${CMAKE_PROJECT_NAME}_node
-    ${CMAKE_PROJECT_NAME}_generate_messages_cpp
+add_dependencies(${PROJECT_NAME}_node
+    ${PROJECT_NAME}_generate_messages_cpp
 )
