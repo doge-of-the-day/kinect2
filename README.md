@@ -18,6 +18,7 @@ Otherwise, this ros package provides an implementation to map points from the de
 | topic_depth_info | string | kinect2/depth/camera_info | depth camera parameters |
 | topic_ir | string | /kinect2/image_ir | intensity image |
 | topic_ir_info | string | /kinect2/image_ir/camera_info | same as depth camera parameters |
+| topic_kinect2_info | string | /kinect2/camera_info | all coeffiecients and parameters packed together |
 | topic_color_registered | string | /kinect2/color_registered | registered color image, not full-hd anymore |
 | topic_depth_rectified | string | /kinect2/depth_rectified | rectified depth images |
 | topic_pointcloud | string | /kinect2/points | colored point cloud |
