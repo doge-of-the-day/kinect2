@@ -10,7 +10,8 @@
 #include <std_srvs/Empty.h>
 
 /// PROJECT
-#include "kinect2_interface.h"
+#include <kinect2/Kinect2Info.h>
+#include <kinect2/kinect2_interface.h>
 
 /**
  * @brief The Kinect2Node class wraps the kinect2 interface class and provides topics
@@ -66,13 +67,14 @@ private:
     std::string                  frame_id_ir_;
 
     //// kinect2 interface
-    Kinect2Interface::CameraParameters::Ptr kinterface_camera_paramters_;
-    Kinect2Interface::Parameters            kinterface_parameters_;
-    Kinect2Interface                        kinterface_;
+    CameraParameters::Ptr        kinterface_camera_parameters_;
+    Kinect2Interface::Parameters kinterface_parameters_;
+    Kinect2Interface             kinterface_;
 
     //// ros message buffers for publication
     sensor_msgs::CameraInfo::Ptr camera_info_rgb_;
     sensor_msgs::CameraInfo::Ptr camera_info_ir_;
+    kinect2::Kinect2Info::Ptr    kinect2_info_;
 
     sensor_msgs::Image::Ptr      image_ir_;
     sensor_msgs::Image::Ptr      image_depth_;
@@ -85,6 +87,11 @@ private:
      * @brief publish triggers the publication of gathered 3D and image data.
      */
     void publish();
+    /**
+     * @brief updateCameraInfo updates the camera information messages which afterwards can
+     *        be published.
+     */
+    void updateCameraInfo();
     /**
      * @brief sleep closes the connection to the kinect device and disables the
      *        publication of data. The ros loop of this node is slowed down to 1Hz.

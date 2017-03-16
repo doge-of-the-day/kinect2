@@ -186,101 +186,23 @@ void Kinect2Node::publish()
         }
     };
 
-    auto updateRGBInfo = [this] () {
-        if(!camera_info_rgb_) {
-            if(!kinterface_camera_paramters_) {
-                kinterface_camera_paramters_.reset(new Kinect2Interface::CameraParameters);
-                kinterface_.getCameraParameters(*kinterface_camera_paramters_);
-            }
-
-            camera_info_rgb_.reset(new sensor_msgs::CameraInfo);
-
-            camera_info_rgb_->header.frame_id = frame_id_rgb_;
-
-            camera_info_rgb_->width = kinterface_camera_paramters_->width_rgb;
-            camera_info_rgb_->height = kinterface_camera_paramters_->height_rgb;
-
-            camera_info_rgb_->distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
-            camera_info_rgb_->D = {};   /// per default these parameters are not known to libfreenect2
-
-            libfreenect2::Freenect2Device::ColorCameraParams &c = kinterface_camera_paramters_->color;
-            camera_info_rgb_->K[0]  = c.fx;
-            camera_info_rgb_->K[2]  = c.cx;
-            camera_info_rgb_->K[4]  = c.fy;
-            camera_info_rgb_->K[5]  = c.cy;
-            camera_info_rgb_->K[8]  = 1.0;
-
-            camera_info_rgb_->R[0]  = 1.0;
-            camera_info_rgb_->R[4]  = 1.0;
-            camera_info_rgb_->K[8]  = 1.0;
-
-            camera_info_rgb_->P[0]  = c.fx;
-            camera_info_rgb_->P[2]  = c.cx;
-            camera_info_rgb_->P[5]  = c.fy;
-            camera_info_rgb_->P[6]  = c.cy;
-            camera_info_rgb_->P[11] = 1.0;
-        }
-
-        camera_info_rgb_->header.stamp = ros::Time::now();
-    };
-
-    auto updateIRInfo = [this] () {
-        if(!camera_info_ir_) {
-            if(!kinterface_camera_paramters_) {
-                kinterface_camera_paramters_.reset(new Kinect2Interface::CameraParameters);
-                kinterface_.getCameraParameters(*kinterface_camera_paramters_);
-            }
-
-            camera_info_ir_.reset(new sensor_msgs::CameraInfo);
-
-            camera_info_ir_->header.frame_id = frame_id_ir_;
-
-            camera_info_ir_->width  = kinterface_camera_paramters_->width_ir;
-            camera_info_ir_->height = kinterface_camera_paramters_->height_ir;
-
-            libfreenect2::Freenect2Device::IrCameraParams &i = kinterface_camera_paramters_->ir;
-
-            camera_info_ir_->distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
-            camera_info_ir_->D = {i.k1, i.k2, i.p1, i.p2, i.k3};
-
-            camera_info_ir_->K[0]  = i.fx;
-            camera_info_ir_->K[2]  = i.cx;
-            camera_info_ir_->K[4]  = i.fy;
-            camera_info_ir_->K[5]  = i.cy;
-            camera_info_ir_->K[8]  = 1.0;
-
-            camera_info_ir_->R[0]  = 1.0;
-            camera_info_ir_->R[4]  = 1.0;
-            camera_info_ir_->K[8]  = 1.0;
-
-            camera_info_ir_->P[0]  = i.fx;
-            camera_info_ir_->P[2]  = i.cx;
-            camera_info_ir_->P[5]  = i.fy;
-            camera_info_ir_->P[6]  = i.cy;
-            camera_info_ir_->P[11] = 1.0;
-        }
-
-        camera_info_ir_->header.stamp = ros::Time::now();
-    };
 
     Kinect2Interface::Data::Ptr data = kinterface_.getData();
     if(data) {
+        updateCameraInfo();
+
         if(kinterface_parameters_.get_color) {
             convertRGB(data->rgb, frame_id_rgb_, image_rgb_);
-            updateRGBInfo();
-
             pub_rgb_.publish(image_rgb_);
+            pub_rgb_info_.publish(camera_info_rgb_);
         }
         if(kinterface_parameters_.get_ir) {
             convertFloat(data->ir, frame_id_ir_, image_ir_);
-            updateIRInfo();
             pub_ir_.publish(image_ir_);
             pub_ir_info_.publish(camera_info_ir_);
 
         }
         if(kinterface_parameters_.get_depth) {
-            updateIRInfo();
-
             convertFloat(data->depth, frame_id_ir_, image_depth_);
             pub_depth_.publish(image_depth_);
             pub_depth_info_.publish(camera_info_ir_);
@@ -311,6 +233,76 @@ bool Kinect2Node::wakeup(std_srvs::Empty::Request &req,
 {
     return kinterface_.start();
 }
+
+void Kinect2Node::updateCameraInfo()
+{
+    if(!kinterface_camera_parameters_) {
+        kinterface_camera_parameters_.reset(new CameraParameters);
+        kinterface_.getCameraParameters(*kinterface_camera_parameters_);
+    }
+
+    if(!camera_info_ir_) {
+        camera_info_ir_.reset(new sensor_msgs::CameraInfo);
+
+        camera_info_ir_->header.frame_id = frame_id_ir_;
+
+        camera_info_ir_->width  = kinterface_camera_parameters_->width_ir;
+        camera_info_ir_->height = kinterface_camera_parameters_->height_ir;
+
+        camera_info_ir_->distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
+
+        kinterface_camera_parameters_->getDistortionCoefficientsIR(camera_info_ir_->D);
+        kinterface_camera_parameters_->getCameraMatrixIR(camera_info_ir_->K);
+        kinterface_camera_parameters_->getRectificationMatrixIR(camera_info_ir_->R);
+        kinterface_camera_parameters_->getProjectionMatrixIR(camera_info_ir_->P);
+    }
+
+    if(!camera_info_rgb_) {
+        camera_info_rgb_.reset(new sensor_msgs::CameraInfo);
+
+        camera_info_rgb_->header.frame_id  = frame_id_rgb_;
+        camera_info_rgb_->width            = kinterface_camera_parameters_->width_rgb;
+        camera_info_rgb_->height           = kinterface_camera_parameters_->height_rgb;
+        camera_info_rgb_->distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
+
+        kinterface_camera_parameters_->getDistortionCoefficientsRGB(camera_info_rgb_->D);
+        kinterface_camera_parameters_->getCameraMatrixRGB(camera_info_rgb_->K);
+        kinterface_camera_parameters_->getRectificationMatrixRGB(camera_info_rgb_->R);
+        kinterface_camera_parameters_->getProjectionMatrixRGB(camera_info_rgb_->P);
+
+    }
+    if(!kinect2_info_ && camera_info_rgb_ && camera_info_ir_) {
+        kinect2_info_.reset(new Kinect2Info);
+        kinect2_info_->header = camera_info_ir_->header;
+
+        /// rgb
+        kinect2_info_->distortion_model_rgb = camera_info_rgb_->distortion_model;
+        kinect2_info_->height_rgb           = camera_info_rgb_->height;
+        kinect2_info_->width_rgb            = camera_info_rgb_->width;
+        kinect2_info_->D_rgb                = camera_info_rgb_->D;
+        kinect2_info_->K_rgb                = camera_info_rgb_->K;
+        kinect2_info_->R_rgb                = camera_info_rgb_->R;
+        kinect2_info_->P_rgb                = camera_info_rgb_->P;
+        kinterface_camera_parameters_->getMappingCoefficientsRGB(kinect2_info_->M_x_rgb,
+                                                                 kinect2_info_->M_y_rgb);
+
+        kinect2_info_->shift_d_rgb = kinterface_camera_parameters_->color.shift_d;
+        kinect2_info_->shift_m_rgb = kinterface_camera_parameters_->color.shift_m;
+
+        /// ir
+        kinect2_info_->distortion_model_ir = camera_info_ir_->distortion_model;
+        kinect2_info_->height_ir           = camera_info_ir_->height;
+        kinect2_info_->width_ir            = camera_info_ir_->width;
+        kinect2_info_->D_ir                = camera_info_ir_->D;
+        kinect2_info_->K_ir                = camera_info_ir_->K;
+        kinect2_info_->R_ir                = camera_info_ir_->R;
+        kinect2_info_->P_ir                = camera_info_ir_->P;
+    }
+
+    camera_info_rgb_->header.stamp = ros::Time::now();
+    camera_info_ir_->header.stamp  = ros::Time::now();
+}
+
 
 
 int main(int argc, char *argv[])

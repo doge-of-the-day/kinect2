@@ -2,7 +2,7 @@
 #define KINECT2_UNDISTORTION_MAPS_HPP
 
 #include <opencv2/opencv.hpp>
-#include "kinect2_interface.h"
+#include <kinect2/kinect2_interface.h>
 
 namespace kinect2 {
 /**
@@ -15,7 +15,7 @@ public:
      * @brief Kinect2DepthToColorMap constructor.
      * @param params    - the camera parameters from the kinect device
      */
-    Kinect2DepthToColorMap(Kinect2Interface::CameraParameters &params) :
+    Kinect2DepthToColorMap(CameraParameters &params) :
         map_x_(params.height_ir, params.width_ir, CV_32FC1, cv::Scalar()),
         map_y_(params.height_ir, params.width_ir, CV_32FC1, cv::Scalar()),
         camera_matrix_color_(cv::Mat::eye(cv::Size(3,3), CV_32FC1)),
@@ -84,14 +84,14 @@ public:
     }
 
 private:
-    const float                        depth_q_ = 0.01;
-    const float                        color_q_ = 0.002199;
+    const float         depth_q_ = 0.01;
+    const float         color_q_ = 0.002199;
 
-    cv::Mat                            map_x_;
-    cv::Mat                            map_y_;
+    cv::Mat             map_x_;
+    cv::Mat             map_y_;
 
-    cv::Mat                            camera_matrix_color_;
-    Kinect2Interface::CameraParameters camera_parameters_;
+    cv::Mat             camera_matrix_color_;
+    CameraParameters    camera_parameters_;
 
     /**
      * @brief depth_to_color is used to build up the lookup tables for mapping depth pixels into

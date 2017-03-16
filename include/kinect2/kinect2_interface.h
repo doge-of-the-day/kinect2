@@ -1,7 +1,6 @@
 #ifndef KINECT2_INTERFACE_H
 #define KINECT2_INTERFACE_H
 
-
 /// SYSTEM
 #include <libfreenect2/libfreenect2.hpp>
 #include <libfreenect2/frame_listener_impl.h>
@@ -20,6 +19,9 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+
+/// PROJECT
+#include <kinect2/kinect2_camera_parameters.hpp>
 
 namespace libfreenect2 {
     using Freenect2DevicePtr = std::shared_ptr<Freenect2Device>;
@@ -64,39 +66,6 @@ public:
         Stamped<cv::Mat>                       depth_rectified;
         Stamped<cv::Mat>                       rgb_registered;
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr points;
-    };
-
-    /**
-     * @brief The CameraParameters struct wraps up all camera parameters, as
-     *        well as the serial number, firmware version and other useful information.
-     */
-    struct CameraParameters {
-        using Ir = libfreenect2::Freenect2Device::IrCameraParams;
-        using Color = libfreenect2::Freenect2Device::ColorCameraParams;
-        using Ptr = std::shared_ptr<CameraParameters>;
-
-         Ir          ir;
-         Color       color;
-
-         std::string serial;
-         std::string firmware;
-
-         CameraParameters & operator = (CameraParameters &other)
-         {
-            ir = other.ir;
-            color = other.color;
-            serial = other.serial;
-            firmware = other.firmware;
-            return *this;
-         }
-
-         const std::size_t bpp              = 4;
-         const std::size_t width_rgb        = 1920;
-         const std::size_t height_rgb       = 1080;
-         const std::size_t size_rgb         = bpp * height_rgb * width_rgb;
-         const std::size_t width_ir         = 512;
-         const std::size_t height_ir        = 424;
-         const std::size_t size_ir          = height_ir * width_ir * bpp;
     };
 
     /**
