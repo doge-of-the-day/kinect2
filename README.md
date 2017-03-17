@@ -34,6 +34,16 @@ Otherwise, this ros package provides an implementation to map points from the de
 | publish_depth_rectified | bool |  false | publish the rectified depth image |
 | pipeline_type | string | CUDA  | set the pipeline type | 
 
+Currently supported pipeline types are:
+
+* "GL"
+* "OCL"
+* "CUDA"
+* "KDE_CUDA"
+* "KDE_OCL"
+
+If 'pypeline_type' is set to any other string or in case of missing support for a certain mode by libfreenect2, the driver falls back to CPU executation, which is considerable slower.
+
 #### Services and Topics
 All sevices and topics can be configured, at least regarding the name. By setting the publication parameter
 the user can choose to process the data and publish it. Therefore the effort for data preparation can be 
