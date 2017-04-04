@@ -140,7 +140,8 @@ void Kinect2Interface::loop()
                 }
 
                 pcl::PointXYZRGB *points_ptr = data_->points->points.data();
-                for(std::size_t i = 0 ; i < camera_parameters_.height_ir ; ++i) {
+                data_->points->header.stamp = now_ms / 1000;
+		for(std::size_t i = 0 ; i < camera_parameters_.height_ir ; ++i) {
                     for(std::size_t j = 0 ; j < camera_parameters_.width_ir ; ++j) {
                         pcl::PointXYZRGB &p = points_ptr[i * camera_parameters_.width_ir + j];
                         registration_->getPointXYZRGB(frame_depth_undistorted_.get(), frame_rgb_registered_.get(), i, j, p.x, p.y, p.z, p.rgb);
