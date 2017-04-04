@@ -51,7 +51,7 @@ public:
     template<typename T>
     struct Stamped {
         T       data;
-        int64_t stamp;
+        long    stamp;
     };
 
     /**

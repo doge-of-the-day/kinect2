@@ -39,12 +39,12 @@ bool Kinect2Node::setup()
     frame_id_rgb_                             = nh_private_.param<std::string>("frame_id_color",            "kinect2_color_optical_frame");
     frame_id_ir_                              = nh_private_.param<std::string>("frame_id_ir",               "kinect2_depth_optical_frame");
 
-    kinterface_parameters_.get_color                = nh_private_.param<bool>("publish_color", false);
-    kinterface_parameters_.get_ir                   = nh_private_.param<bool>("publish_ir", false);
-    kinterface_parameters_.get_depth                 = nh_private_.param<bool>("publish_depth", false);
+    kinterface_parameters_.get_color            = nh_private_.param<bool>("publish_color", false);
+    kinterface_parameters_.get_ir               = nh_private_.param<bool>("publish_ir", false);
+    kinterface_parameters_.get_depth            = nh_private_.param<bool>("publish_depth", false);
 
-    kinterface_parameters_.get_color_registered     = nh_private_.param<bool>("publish_color_registered", false);
-    kinterface_parameters_.get_depth_rectified      = nh_private_.param<bool>("publish_depth_rectified", false);
+    kinterface_parameters_.get_color_registered = nh_private_.param<bool>("publish_color_registered", false);
+    kinterface_parameters_.get_depth_rectified  = nh_private_.param<bool>("publish_depth_rectified", false);
 
     const std::string pipeline_type = nh_private_.param<std::string>("pipeline_type", "CUDA");
     if(pipeline_type == "GL") {
@@ -143,7 +143,7 @@ void Kinect2Node::publish()
             image->header.frame_id = frame_id;
         }
 
-        image->header.stamp = ros::Time(rgb.stamp * 1e-4);
+        image->header.stamp = ros::Time(0, rgb.stamp * 1e3);
 
         const uchar * rgb_ptr = rgb.data.data;
         uchar * image_ptr = image->data.data();
@@ -176,7 +176,7 @@ void Kinect2Node::publish()
             image->header.frame_id = frame_id;
         }
 
-        image->header.stamp = ros::Time(mat.stamp * 1e-4);
+        image->header.stamp = ros::Time(0, mat.stamp * 1e3);
 
         const float * mat_ptr = mat.data.ptr<float>();
         ushort * image_ptr = (ushort*) image->data.data();
