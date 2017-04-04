@@ -114,9 +114,9 @@ void Kinect2Interface::loop()
                 setupData();
                 /// BUFFER THE DATA IN THE BUNDLE OBJECT
                 auto now =
-                        std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::system_clock::now());
+                        std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now());
                 long now_ms =
-                        std::chrono::duration_cast<std::chrono::microseconds>(now.time_since_epoch()).count();
+                        std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
 
                 if(parameters_.get_color) {
                     std::memcpy(data_->rgb.data.data, rgb->data, camera_parameters_.size_rgb);

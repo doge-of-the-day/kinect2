@@ -84,9 +84,8 @@ private:
     sensor_msgs::Image::Ptr      image_rgb_registered_;
 
     //// time offsets
-    long                         time_offset_ir_;
-    long                         time_offset_rgb_;
-    long                         time_offset_depth_;
+    ros::Duration                time_offset_ir_;
+    ros::Duration                time_offset_rgb_;
 
     /**
      * @brief publish triggers the publication of gathered 3D and image data.
