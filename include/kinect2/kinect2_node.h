@@ -83,6 +83,10 @@ private:
     sensor_msgs::Image::Ptr      image_rgb_;
     sensor_msgs::Image::Ptr      image_rgb_registered_;
 
+    //// time offsets
+    long                         time_offset_ir_;
+    long                         time_offset_rgb_;
+    long                         time_offset_depth_;
 
     /**
      * @brief publish triggers the publication of gathered 3D and image data.

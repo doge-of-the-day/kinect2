@@ -34,6 +34,13 @@ bool Kinect2Node::setup()
     const std::string topic_pointcloud        = nh_private_.param<std::string>("topic_rgb",                 "/kinect2/points");
     const std::string service_name_wakeup     = nh_private_.param<std::string>("service_name_wakeup",       "/kinect2/wakeup");
     const std::string service_name_sleep      = nh_private_.param<std::string>("service_name_sleep",        "/kinect2/sleep");
+    const double      time_offset_ir          = nh_private_.param<double>("time_offset_ir", 0.0);
+    const double      time_offset_rgb         = nh_private_.param<double>("time_offset_rgb", 0.0);;
+    const double      time_offset_depth       = nh_private_.param<double>("time_offset_depth", 0.0);;
+
+    time_offset_ir_    = static_cast<long>(std::floor(1e9 * time_offset_ir + 0.5));
+    time_offset_rgb_   = static_cast<long>(std::floor(1e9 * time_offset_rgb + 0.5));
+    time_offset_depth_ = static_cast<long>(std::floor(1e9 * time_offset_depth + 0.5));
 
     pub_rate_preferred_                       = nh_private_.param<double>("preferred_publication_rate",     -1.0);
     frame_id_rgb_                             = nh_private_.param<std::string>("frame_id_color",            "kinect2_color_optical_frame");
@@ -195,30 +202,36 @@ void Kinect2Node::publish()
 
         if(kinterface_parameters_.get_color) {
             convertRGB(data->rgb, frame_id_rgb_, image_rgb_);
+            image_rgb_->header.stamp +=  ros::Duration(0, time_offset_rgb_);
             pub_rgb_.publish(image_rgb_);
             pub_rgb_info_.publish(camera_info_rgb_);
         }
         if(kinterface_parameters_.get_ir) {
             convertFloat(data->ir, frame_id_ir_, image_ir_);
+            image_ir_->header.stamp +=  ros::Duration(0, time_offset_ir_);
             pub_ir_.publish(image_ir_);
             pub_ir_info_.publish(camera_info_ir_);
 
         }
         if(kinterface_parameters_.get_depth) {
             convertFloat(data->depth, frame_id_ir_, image_depth_);
+            image_depth_->header.stamp +=  ros::Duration(0, time_offset_depth_);
             pub_depth_.publish(image_depth_);
             pub_depth_info_.publish(camera_info_ir_);
         }
         if(kinterface_parameters_.get_depth_rectified) {
             convertFloat(data->depth_rectified, frame_id_ir_, image_depth_rectified_);
+            image_depth_rectified_->header.stamp +=  ros::Duration(0, time_offset_depth_);
             pub_depth_undistorted_.publish(image_depth_rectified_);
         }
         if(kinterface_parameters_.get_color_registered) {
             convertRGB(data->rgb_registered, frame_id_ir_, image_rgb_registered_);
+            image_rgb_registered_->header.stamp +=  ros::Duration(0, time_offset_rgb_);
             pub_rgb_registered_.publish(image_rgb_registered_);
         }
         if(!data->points->points.empty()) {
             data->points->header.frame_id = frame_id_ir_;
+            data->points->header.stamp +=  static_cast<long>(time_offset_depth_ * 1e-3);
             pub_pointcloud_.publish(data->points);
         }
         pub_kinect2_info_.publish(kinect2_info_);
