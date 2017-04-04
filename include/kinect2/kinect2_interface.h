@@ -19,6 +19,7 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <chrono>
 
 /// PROJECT
 #include <kinect2/kinect2_camera_parameters.hpp>
@@ -49,8 +50,8 @@ public:
      */
     template<typename T>
     struct Stamped {
-        T data;
-        uint32_t stamp;
+        T       data;
+        int64_t stamp;
     };
 
     /**
