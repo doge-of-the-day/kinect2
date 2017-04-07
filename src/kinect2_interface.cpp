@@ -113,29 +113,35 @@ void Kinect2Interface::loop()
                 std::unique_lock<std::mutex> l(data_mutex_);
                 setupData();
                 /// BUFFER THE DATA IN THE BUNDLE OBJECT
+                auto now =
+                        std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now());
+                long now_ms =
+                        std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
+
                 if(parameters_.get_color) {
                     std::memcpy(data_->rgb.data.data, rgb->data, camera_parameters_.size_rgb);
-                    data_->rgb.stamp = rgb->timestamp;
+                    data_->rgb.stamp = now_ms;
                 }
                 if(parameters_.get_ir) {
                     std::memcpy(data_->ir.data.data, ir->data, camera_parameters_.size_ir);
-                    data_->ir.stamp = ir->timestamp;
+                    data_->ir.stamp = now_ms;
                 }
                 if(parameters_.get_depth) {
                     std::memcpy(data_->depth.data.data, depth->data, camera_parameters_.size_ir);
-                    data_->depth.stamp = depth->timestamp;
+                    data_->depth.stamp = now_ms;
                 }
                 if(parameters_.get_depth_rectified) {
                     std::memcpy(data_->depth_rectified.data.data, frame_depth_undistorted_->data, camera_parameters_.size_ir);
-                    data_->depth_rectified.stamp = frame_depth_undistorted_->timestamp;
+                    data_->depth_rectified.stamp = now_ms;
                 }
                 if(parameters_.get_color_registered) {
                     std::memcpy(data_->rgb_registered.data.data, frame_rgb_registered_->data, camera_parameters_.size_ir);
-                    data_->rgb_registered.stamp = frame_rgb_registered_->timestamp;
+                    data_->rgb_registered.stamp = now_ms;
                 }
 
                 pcl::PointXYZRGB *points_ptr = data_->points->points.data();
-                for(std::size_t i = 0 ; i < camera_parameters_.height_ir ; ++i) {
+                data_->points->header.stamp = now_ms / 1000;
+		for(std::size_t i = 0 ; i < camera_parameters_.height_ir ; ++i) {
                     for(std::size_t j = 0 ; j < camera_parameters_.width_ir ; ++j) {
                         pcl::PointXYZRGB &p = points_ptr[i * camera_parameters_.width_ir + j];
                         registration_->getPointXYZRGB(frame_depth_undistorted_.get(), frame_rgb_registered_.get(), i, j, p.x, p.y, p.z, p.rgb);
