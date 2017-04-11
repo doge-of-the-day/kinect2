@@ -51,7 +51,7 @@ public:
     template<typename T>
     struct Stamped {
         T       data;
-        long    stamp;
+        long    stamp;  /// in nanoseconds
     };
 
     /**
