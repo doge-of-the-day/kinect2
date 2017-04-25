@@ -88,6 +88,8 @@ void Kinect2Interface::loop()
         is_running_ = false;
     }
 
+    libfreenect2::setGlobalLogger(libfreenect2::createConsoleLogger(libfreenect2::Logger::None));
+
     camera_parameters_.serial   = device_->getSerialNumber();
     camera_parameters_.firmware = device_->getFirmwareVersion();
 
