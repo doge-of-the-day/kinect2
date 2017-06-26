@@ -118,6 +118,7 @@ int Kinect2Node::run()
             } else {
                 ros::Rate(1.0).sleep();
             }
+            ros::spinOnce();
         }
     }
     kinterface_.stop();
