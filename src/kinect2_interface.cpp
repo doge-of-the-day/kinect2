@@ -86,6 +86,7 @@ void Kinect2Interface::loop()
 {
     if(!device_->start()) {
         is_running_ = false;
+        return;
     }
 
     camera_parameters_.serial   = device_->getSerialNumber();
