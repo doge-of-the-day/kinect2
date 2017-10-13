@@ -27,7 +27,7 @@ public:
         for(std::size_t i = 0 ; i < params.height_ir ; ++i) {
             for(std::size_t j = 0 ; j < params.width_ir ; ++j) {
                 const std::size_t pos = i * params.width_ir +j;
-                depth_to_color(j,
+                depth2color(j,
                                i,
                                map_x_ptr[pos],
                                map_y_ptr[pos]);
@@ -39,6 +39,40 @@ public:
         camera_matrix_color_.at<float>(2,0) = params.color.cx;
         camera_matrix_color_.at<float>(2,1) = params.color.cy;
     }
+
+    inline float projectUndistortedDepth(const cv::Vec3f &pt,
+                             std::size_t &row,
+                             std::size_t &col)
+    {
+        const float depth = std::sqrt(pt.dot(pt));
+        int c = pt[0] * camera_parameters_.ir.fx / (depth) + camera_parameters_.ir.cx - 0.5f;
+        int r = pt[1] * camera_parameters_.ir.fy / (depth) + camera_parameters_.ir.cy - 0.5f;
+
+        if( r >(int) camera_parameters_.height_ir){
+            row = camera_parameters_.height_ir;
+        }
+        else if( r < 0){
+            row = 0;
+        }
+        else{
+            row = r;
+        }
+
+        if( c > (int) camera_parameters_.width_ir){
+            col = camera_parameters_.width_ir;
+        }
+        else if( c < 0){
+            col = 0;
+        }
+        else{
+            col = c;
+        }
+
+        return depth;
+
+    }
+
+
 
     /**
      * @brief getRGBCoordinates return column and row indices defined within the
@@ -101,7 +135,7 @@ private:
      * @param m_col the resulting mapped row value
      * @param m_row the resulting mapped column value
      */
-    inline void depth_to_color(const int col,
+    inline void depth2color(const int col,
                                const int row,
                                float    &m_col,
                                float    &m_row) const
@@ -138,6 +172,7 @@ private:
         m_row = (wy / color_q_) +
               camera_parameters_.color.cy;
     }
+
 };
 }
 

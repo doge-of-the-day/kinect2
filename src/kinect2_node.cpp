@@ -29,7 +29,7 @@ bool Kinect2Node::setup()
     const std::string topic_ir                = nh_private_.param<std::string>("topic_ir",                  "/kinect2/image_ir");
     const std::string topic_ir_info           = nh_private_.param<std::string>("topic_ir_info",             "/kinect2/image_ir/camera_info");
     const std::string topic_kinect2_info      = nh_private_.param<std::string>("topic_kinect2_info",        "/kinect2/camera_info");
-    const std::string topic_color_registered  = nh_private_.param<std::string>("topic_colo_registered",     "/kinect2/color_registered");
+    const std::string topic_color_registered  = nh_private_.param<std::string>("topic_color_registered",     "/kinect2/color_registered");
     const std::string topic_depth_rectified   = nh_private_.param<std::string>("topic_depth_undistorted",   "/kinect2/depth_rectified");
     const std::string topic_pointcloud        = nh_private_.param<std::string>("topic_rgb",                 "/kinect2/points");
     const std::string service_name_wakeup     = nh_private_.param<std::string>("service_name_wakeup",       "/kinect2/wakeup");

@@ -5,10 +5,10 @@
 		<param name="topic_color_info" value="/kinect2/image_color/camera_info"/>
 		<param name="topic_depth" value="/kinect2/depth"/>
 		<param name="topic_depth_info" value="kinect2/depth/camera_info"/>
-		<!--<param name="" value=""/>-->
+		<param name="publish_color_registered" value="true"/>
 		<param name="publish_color" value="true"/>
-		<param name="publish_ir" value="true"/>
-		<param name="publish_depth" value="true"/>
+		<param name="publish_ir" value="false"/>
+		<param name="publish_depth" value="false"/>
 	</node>
 </launch>
 
