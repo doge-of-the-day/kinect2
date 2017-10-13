@@ -1,5 +1,5 @@
-#ifndef KINECT2_NODE_H
-#define KINECT2_NODE_H
+#ifndef KINECT2_RAW_NODE_H
+#define KINECT2_RAW_NODE_H
 
 
 /// SYSTEM
@@ -12,24 +12,23 @@
 /// PROJECT
 #include <kinect2/Kinect2Info.h>
 #include <kinect2/kinect2_interface.h>
-#include <kinect2/kinect2_calibration.hpp>
 
 /**
  * @brief The Kinect2Node class wraps the kinect2 interface class and provides topics
  *        and service to either retrieve data or stop / start the driver.
  */
 namespace kinect2 {
-class Kinect2Node
+class Kinect2RawNode
 {
 public:
     /**
      * @brief Kinect2Node constructor.
      */
-    Kinect2Node();
+    Kinect2RawNode();
     /**
      * @brief ~Kinect2Node destructor.
      */
-    virtual ~Kinect2Node();
+    virtual ~Kinect2RawNode();
 
     /**
      * @brief setup reads the parameters and prepares the kinect2 interface.
@@ -51,24 +50,20 @@ private:
 
     ros::Publisher               pub_rgb_;
     ros::Publisher               pub_rgb_info_;
-    ros::Publisher               pub_rgb_rectified_;
-    ros::Publisher               pub_rgb_registered_;
     ros::Publisher               pub_depth_;
     ros::Publisher               pub_depth_info_;
-    ros::Publisher               pub_depth_rectified_;
     ros::Publisher               pub_ir_;
     ros::Publisher               pub_ir_info_;
-    ros::Publisher               pub_ir_rectified_;
+    ros::Publisher               pub_kinect2_info_;
+    ros::Publisher               pub_rgb_registered_;
+    ros::Publisher               pub_depth_undistorted_;
     ros::Publisher               pub_pointcloud_;
 
-    bool                         publish_rgb_;
-    bool                         publish_rgb_rectified_;
-    bool                         publish_rgb_registered_;
+    bool                         publish_color_;
     bool                         publish_ir_;
-    bool                         publish_ir_rectified_;
     bool                         publish_depth_;
+    bool                         publish_color_registered_;
     bool                         publish_depth_rectified_;
-
 
     //// stop/start services
     ros::ServiceServer           service_sleep_;
@@ -82,19 +77,6 @@ private:
     CameraParameters::Ptr        kinterface_camera_parameters_;
     Kinect2Interface::Parameters kinterface_parameters_;
     Kinect2Interface             kinterface_;
-    Kinect2Calibration           kcalibration_;
-
-    cv::Mat                      depth_lookup_rectified_x_;
-    cv::Mat                      depth_lookup_rectified_y_;
-    cv::Mat                      rgb_T_ir;
-
-    cv::Mat                      ir_rectification_map_x_;
-    cv::Mat                      ir_rectification_map_y_;
-    cv::Mat                      ir_optimal_camera_matrix_;
-
-    cv::Mat                      rgb_rectification_map_x_;
-    cv::Mat                      rgb_rectification_map_y_;
-    cv::Mat                      rgb_optimal_camera_matrix_;
 
     //// ros message buffers for publication
     sensor_msgs::CameraInfo::Ptr camera_info_rgb_;
@@ -102,12 +84,10 @@ private:
     kinect2::Kinect2Info::Ptr    kinect2_info_;
 
     sensor_msgs::Image::Ptr      image_ir_;
-    sensor_msgs::Image::Ptr      image_ir_rectified_;
     sensor_msgs::Image::Ptr      image_depth_;
     sensor_msgs::Image::Ptr      image_depth_rectified_;
     sensor_msgs::Image::Ptr      image_rgb_;
     sensor_msgs::Image::Ptr      image_rgb_registered_;
-    sensor_msgs::Image::Ptr      image_rgb_rectified_;
 
     //// time offsets
     ros::Duration                time_offset_ir_;
@@ -141,4 +121,4 @@ private:
 
 };
 }
-#endif // KINECT2_NODE_H
+#endif // KINECT2_RAW_NODE_H

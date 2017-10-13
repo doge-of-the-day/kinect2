@@ -77,13 +77,14 @@ public:
     struct Parameters {
         Kinect2Interface::PipelineType mode = CUDA;
         bool get_color                  = false;
-        bool get_ir                   = true;
-        bool get_depth                = false;
-        bool get_depth_rectified      = false;
+        bool get_ir                     = true;
+        bool get_depth                  = false;
+        bool get_depth_rectified        = false;
         bool get_color_registered       = false;
+        bool get_points                 = false;
 
-        bool activate_edge_filter     = false;
-        bool activate_bilateral_filter= false;
+        bool activate_edge_filter       = false;
+        bool activate_bilateral_filter  = false;
     };
 
 

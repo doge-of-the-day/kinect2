@@ -15,7 +15,6 @@ find_package(catkin REQUIRED
     message_generation
 )
 
-
 find_package(freenect2 REQUIRED)
 find_package(PCL REQUIRED)
 find_package(OpenCV REQUIRED)
@@ -46,13 +45,32 @@ catkin_package(
   DEPENDS PCL OpenCV freenect2
 )
 
-add_executable(${PROJECT_NAME}_node
+add_executable(${PROJECT_NAME}_raw_node
     src/kinect2_node.cpp
     src/kinect2_interface.cpp
 
     include/kinect2/kinect2_node.h
     include/kinect2/kinect2_interface.h
     include/kinect2/kinect2_depth_to_color_map.hpp
+)
+
+target_link_libraries(${PROJECT_NAME}_raw_node
+    ${catkin_LIBRARIES}
+    ${freenect2_LIBRARY}
+    ${PCL_LIBRARIES}
+    ${OpenCV_LIBRARIES}
+)
+
+add_dependencies(${PROJECT_NAME}_raw_node
+    ${PROJECT_NAME}_generate_messages_cpp
+)
+
+add_executable(${PROJECT_NAME}_node
+    src/kinect2_node.cpp
+    src/kinect2_interface.cpp
+
+    include/kinect2/kinect2_node.h
+    include/kinect2/kinect2_interface.h
 )
 
 target_link_libraries(${PROJECT_NAME}_node
