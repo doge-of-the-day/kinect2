@@ -18,12 +18,14 @@ find_package(catkin REQUIRED
 find_package(freenect2 REQUIRED)
 find_package(PCL REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 include_directories(
     ${catkin_INCLUDE_DIRS}
     ${freenect2_INCLUDE_DIRS}
     ${PCL_INCLUDE_DIRS}
     ${OpenCV_INCLUDE_DIRS}
+    ${Eigen3_INCLUDE_DIRS}
     include
 )
 
@@ -46,7 +48,7 @@ catkin_package(
 )
 
 add_executable(${PROJECT_NAME}_raw_node
-    src/kinect2_node.cpp
+    src/kinect2_raw_node.cpp
     src/kinect2_interface.cpp
 
     include/kinect2/kinect2_node.h

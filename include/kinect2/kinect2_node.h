@@ -84,6 +84,7 @@ private:
     Kinect2Interface             kinterface_;
     Kinect2Calibration           kcalibration_;
 
+
     cv::Mat                      depth_lookup_rectified_x_;
     cv::Mat                      depth_lookup_rectified_y_;
     cv::Mat                      rgb_T_ir;
