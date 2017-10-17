@@ -12,10 +12,10 @@ Otherwise, this ros package provides an implementation to map points from the de
 #### Parameters
 | name | type  | default | what for |
 | --------|-----|------| ----------- |
-| topic_rgb| string | /kinect2/image_color_raw | full hd rgb image |
+| topic_rgb| string | /kinect2/image_rgb/raw | full hd rgb image |
 |topic_rgb_rectified| string|/kinect2/image_rgb/rectified| rectified color image|
-|topic_rgb_registered|string|/kinect2/rgb_registered| registered color image|
-| topic_rgb_info | string | /kinect2/image_color/camera_info | color camera parameters |
+|topic_rgb_registered|string|/kinect2/image_rgb/registered| registered color image|
+| topic_rgb_info | string | /kinect2/image_rgb/camera_info | color camera parameters |
 | topic_depth | string | /kinect2/depth | depth images |
 | topic_depth_info | string | kinect2/depth/camera_info | depth camera parameters |
 | topic_ir | string | /kinect2/image_ir | intensity image |
@@ -29,12 +29,17 @@ Otherwise, this ros package provides an implementation to map points from the de
 | preferred_publication_rate | double | -1.0 | preferred rate at which the driver front end sould operate |
 | frame_id_color | string | kinect2_color_optical_frame | frame name for the color camera |
 | frame_id_ir | string | kinect2_depth_optical_frame | frame_id for the ir / depth camera |
-| publish_color | bool |  false | publish the color image in full-hd |
+| publish_rgb | bool |  false | publish the raw color image in full-hd |
 | publish_ir |  bool |  false | publish the intensity image |
-| publish_depth | bool | false | publish the depth image |
-| publish_color_registered | bool |  false | publish the registered color image |
+| publish_rgb | bool | false | publish the depth image |
+| publish_rgb_registered | bool |  false | publish the registered color image |
+| publish_rgb_rectified | bool |  false | publish the rectified color image |
 | publish_depth_rectified | bool |  false | publish the rectified depth image |
 | pipeline_type | string | CUDA  | set the pipeline type | 
+|calibration_color| string| ""|color calibration file|
+|calibration_depth|string|""|depth sensor calibration file|
+|calibration_ir|string|""| IR calibration file|
+|calibration_pose|string|""|transform between depth and color sensor|
 
 Currently supported pipeline types are:
 
