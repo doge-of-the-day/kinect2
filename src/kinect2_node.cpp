@@ -351,16 +351,15 @@ void Kinect2Node::publish()
                             rgb_x < rgb_rectified.data.cols &&
                             rgb_y < rgb_rectified.data.rows) {
                         const auto &rgb = rgb_rectified_ptr[rgb_rectified.data.cols * rgb_y + rgb_x];
-                        *rgb_registered_ptr = rgb;
+                        rgb_registered_ptr[i * points->width +  j] = rgb;
                         pcl::PointXYZRGB &prgb = points_ptr[i * points->width +  j];
-                        prgb.x = p(0);
+                        prgb.x = -p(0);
                         prgb.y = p(1);
                         prgb.z = p(2);
                         prgb.r = rgb[2];
                         prgb.g = rgb[1];
-                        prgb.b = rgb[1];
+                        prgb.b = rgb[0];
                     }
-                    ++rgb_registered_ptr;
                 }
             }
         }
@@ -372,6 +371,10 @@ void Kinect2Node::publish()
             image_rgb_registered_->header.stamp +=  time_offset_rgb_;
             pub_rgb_registered_.publish(image_rgb_registered_);
         }
+
+//        cv::imshow("debug", rgb_registered.data);
+//        cv::waitKey(19);
+
         points->header.frame_id = frame_id_ir_;
         points->header.stamp += time_offset_ir_.toNSec() / 1000;
         pub_pointcloud_.publish(points);
@@ -444,9 +447,6 @@ void Kinect2Node::updateCameraInfo()
 
         for(int i = 0 ; i < depth_lookup_rectified_x_.rows ; ++i) {
             for(int j = 0 ; j < depth_lookup_rectified_x_.cols ; ++j) {
-//                const float x = ir_rectification_map_x_.at<float>(i,j);
-//                const float y = ir_rectification_map_y_.at<float>(i,j);
-
 
                 *depth_lookup_rectified_x_ptr = (j - cx) * fx;
                 *depth_lookup_rectified_y_ptr = (i - cy) * fy;
