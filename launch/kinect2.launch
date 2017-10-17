@@ -1,14 +1,20 @@
 <?xml version="1.0" ?>
 <launch>
 	<node pkg="kinect2" type="kinect2_node" name="kinect2_node" output="screen" >
-		<param name="topic_color" value="/kinect2/image_color"/>
-		<param name="topic_color_info" value="/kinect2/image_color/camera_info"/>
-		<param name="topic_depth" value="/kinect2/depth"/>
-		<param name="topic_depth_info" value="kinect2/depth/camera_info"/>
-		<param name="publish_color_registered" value="true"/>
-		<param name="publish_color" value="true"/>
-		<param name="publish_ir" value="false"/>
-		<param name="publish_depth" value="false"/>
+                <param name="topic_rgb"            value="/kinect2/image_rgb/raw"/>
+                <param name="topic_rgb_rectified"  value="/kinect2/image_rgb/rectified"/>
+                <param name="topic_rgb_registered" value="/kinect2/image_rgb/registered"/>
+                <param name="topic_rgb_info"       value="/kinect2/image_rgb/camera_info"/>
+                <param name="topic_depth"          value="/kinect2/depth"/>
+                <param name="topic_depth_info"     value="/kinect2/depth/camera_info"/>
+                <param name="publish_rbg_registered"  value="true"/>
+                <param name="publish_rgb_rectified"   value="true"/>
+                <param name="publish_rgb"             value="true"/>
+                <param name="publish_ir"              value="true"/>
+                <param name="publish_depth"           value="true"/>
+                <param name="publish_depth_rectified" value="true"/>
+                <param name="publish_ir"              value="true"/>
+                <param name="publish_ir_rectified"    value="true"/>
 		<param name="calibration_color" value="$(find kinect2)/res/calib_color.yaml" />
 		<param name="calibration_depth" value="$(find kinect2)/res/calib_depth.yaml" />
 		<param name="calibration_ir" 	value="$(find kinect2)/res/calib_ir.yaml" />

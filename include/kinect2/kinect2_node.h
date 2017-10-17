@@ -87,7 +87,6 @@ private:
 
     cv::Mat                      depth_lookup_rectified_x_;
     cv::Mat                      depth_lookup_rectified_y_;
-    cv::Mat                      rgb_T_ir;
 
     cv::Mat                      ir_rectification_map_x_;
     cv::Mat                      ir_rectification_map_y_;

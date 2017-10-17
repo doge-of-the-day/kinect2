@@ -25,15 +25,15 @@ bool Kinect2Node::setup()
 {
     const std::string topic_rgb               = nh_private_.param<std::string>("topic_rgb",                 "/kinect2/image_rgb/raw");
     const std::string topic_rgb_info          = nh_private_.param<std::string>("topic_rgb_info",            "/kinect2/image_rgb/camera_info");
-    const std::string topic_rgb_rectified     = nh_private_.param<std::string>("topic_rgb_rectified",       "/kinect2/image_rgb/retified");
-    const std::string topic_rgb_registered    = nh_private_.param<std::string>("topic_color_registered",    "/kinect2/rgb_registered");
+    const std::string topic_rgb_rectified     = nh_private_.param<std::string>("topic_rgb_rectified",       "/kinect2/image_rgb/rectified");
+    const std::string topic_rgb_registered    = nh_private_.param<std::string>("topic_rgb_registered",      "/kinect2/image_rgb/registered");
     const std::string topic_depth             = nh_private_.param<std::string>("topic_depth",               "/kinect2/depth/raw");
     const std::string topic_depth_info        = nh_private_.param<std::string>("topic_depth_info",          "/kinect2/depth/camera_info");
     const std::string topic_depth_rectified   = nh_private_.param<std::string>("topic_depth_rectified",     "/kinect2/depth/rectified");
     const std::string topic_ir                = nh_private_.param<std::string>("topic_ir",                  "/kinect2/image_ir/raw");
     const std::string topic_ir_info           = nh_private_.param<std::string>("topic_ir_info",             "/kinect2/image_ir/camera_info");
     const std::string topic_ir_rectified      = nh_private_.param<std::string>("topic_ir_rectified",        "/kinect2/image_ir/rectified");
-    const std::string topic_pointcloud        = nh_private_.param<std::string>("topic_rgb",                 "/kinect2/points");
+    const std::string topic_pointcloud        = nh_private_.param<std::string>("topic_pointcloud",          "/kinect2/points");
     const std::string service_name_wakeup     = nh_private_.param<std::string>("service_name_wakeup",       "/kinect2/wakeup");
     const std::string service_name_sleep      = nh_private_.param<std::string>("service_name_sleep",        "/kinect2/sleep");
     const std::string calibration_color       = nh_private_.param<std::string>("calibration_color",         "");
@@ -108,7 +108,7 @@ bool Kinect2Node::setup()
         pub_rgb_registered_ = nh_.advertise<sensor_msgs::Image>(topic_rgb_registered, 1);
     }
     if(publish_rgb_rectified_) {
-        pub_depth_rectified_ = nh_.advertise<sensor_msgs::Image>(topic_rgb_rectified, 1);
+        pub_rgb_rectified_ = nh_.advertise<sensor_msgs::Image>(topic_rgb_rectified, 1);
     }
 
     if(publish_depth_) {
@@ -141,8 +141,6 @@ bool Kinect2Node::setup()
 
 int Kinect2Node::run()
 {
-    cv::namedWindow("debug", 0);
-
     if(pub_rate_preferred_ <= 0.0) {
         while(ros::ok()) {
             if(kinterface_.isRunning()) {
@@ -291,9 +289,9 @@ void Kinect2Node::publish()
 
         /// RECTIFIED RGB IMAGE
         if(publish_rgb_rectified_) {
-            convertRGB(rgb_rectified, frame_id_ir_, image_depth_rectified_);
-            image_depth_rectified_->header.stamp +=  time_offset_rgb_;
-            pub_rgb_registered_.publish(image_rgb_rectified_);
+            convertRGB(rgb_rectified, frame_id_rgb_, image_rgb_rectified_);
+            image_rgb_rectified_->header.stamp +=  time_offset_rgb_;
+            pub_rgb_rectified_.publish(image_rgb_rectified_);
         }
         /// RECTIFIED DEPTH IMAGE
         if(publish_depth_rectified_) {
@@ -311,7 +309,7 @@ void Kinect2Node::publish()
 
             convertFloat(ir_recitifed, frame_id_ir_, image_ir_rectified_);
             image_ir_rectified_->header.stamp +=  time_offset_ir_;
-            pub_depth_rectified_.publish(image_ir_rectified_);
+            pub_ir_rectified_.publish(image_ir_rectified_);
         }
 
         /// REGISTER THE DATA AND PRODUCE AND REGISTERED IMAGE AND A POINT CLOUD
@@ -334,7 +332,6 @@ void Kinect2Node::publish()
         pcl::PointXYZRGB *points_ptr = points->points.data();
         for(int i = 0 ; i < depth_rectified.data.rows ; ++i) {
             for(int j = 0 ; j < depth_rectified.data.cols ; ++j) {
-                const float depth_d = data->depth.data.at<float>(i,j) * 1e-3f;
                 const float depth_r = depth_rectified.data.at<float>(i,j) * 1e-3f;
 
                 if(std::isnormal(depth_r)) {
@@ -355,7 +352,7 @@ void Kinect2Node::publish()
                             rgb_y < rgb_rectified.data.rows) {
                         const auto &rgb = rgb_rectified_ptr[rgb_rectified.data.cols * rgb_y + rgb_x];
                         *rgb_registered_ptr = rgb;
-                        pcl::PointXYZRGB &prgb = points_ptr[i * points->width + j];
+                        pcl::PointXYZRGB &prgb = points_ptr[i * points->width +  j];
                         prgb.x = p(0);
                         prgb.y = p(1);
                         prgb.z = p(2);
@@ -368,14 +365,10 @@ void Kinect2Node::publish()
             }
         }
 
-        cv::normalize(depth_rectified.data, depth_rectified.data, 0.0, 1.0, cv::NORM_MINMAX);
-        cv::imshow("debug",  depth_rectified.data);
-        cv::waitKey(19);
-
         /// REGISTERED RGB IMAGE
         if(publish_rgb_registered_) {
             /// register the shit out of it
-            convertRGB(rgb_registered, frame_id_ir_, image_rgb_registered_);
+            convertRGB(rgb_registered, frame_id_rgb_, image_rgb_registered_);
             image_rgb_registered_->header.stamp +=  time_offset_rgb_;
             pub_rgb_registered_.publish(image_rgb_registered_);
         }
@@ -451,8 +444,8 @@ void Kinect2Node::updateCameraInfo()
 
         for(int i = 0 ; i < depth_lookup_rectified_x_.rows ; ++i) {
             for(int j = 0 ; j < depth_lookup_rectified_x_.cols ; ++j) {
-                const float x = ir_rectification_map_x_.at<float>(i,j);
-                const float y = ir_rectification_map_y_.at<float>(i,j);
+//                const float x = ir_rectification_map_x_.at<float>(i,j);
+//                const float y = ir_rectification_map_y_.at<float>(i,j);
 
 
                 *depth_lookup_rectified_x_ptr = (j - cx) * fx;

@@ -12,8 +12,10 @@ Otherwise, this ros package provides an implementation to map points from the de
 #### Parameters
 | name | type  | default | what for |
 | --------|-----|------| ----------- |
-| topic_color | string | /kinect2/image_color | full hd rgb image |
-| topic_color_info | string | /kinect2/image_color/camera_info | color camera parameters |
+| topic_rgb| string | /kinect2/image_color_raw | full hd rgb image |
+|topic_rgb_rectified| string|/kinect2/image_rgb/rectified| rectified color image|
+|topic_rgb_registered|string|/kinect2/rgb_registered| registered color image|
+| topic_rgb_info | string | /kinect2/image_color/camera_info | color camera parameters |
 | topic_depth | string | /kinect2/depth | depth images |
 | topic_depth_info | string | kinect2/depth/camera_info | depth camera parameters |
 | topic_ir | string | /kinect2/image_ir | intensity image |
